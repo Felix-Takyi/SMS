@@ -250,3 +250,52 @@ tbody td strong { color: #203a33; font-size: 11px; }
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after { scroll-behavior: auto !important; transition-duration: .01ms !important; animation-duration: .01ms !important; }
 }
+/* Access management polish */
+.dialog-note { max-width: 520px; margin: 8px 0 0; color: var(--muted); font-size: 11px; line-height: 1.55; }
+.optional-label { color: #8a9892; font-size: 9px; font-weight: 600; text-transform: uppercase; letter-spacing: .5px; }
+.form-grid label > small { display: block; margin-top: 6px; color: #87958f; font-size: 9px; font-weight: 500; line-height: 1.45; }
+.role-picker { margin: 20px 0 0; padding: 0; border: 0; }
+.role-picker legend { margin-bottom: 4px; color: var(--forest); font-family: Cambria, Georgia, serif; font-size: 18px; font-weight: 600; }
+.role-picker > p { margin: 0 0 12px; color: var(--muted); font-size: 10px; }
+.role-option-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 9px; max-height: 290px; padding: 3px; overflow: auto; }
+.role-option { display: grid; grid-template-columns: 18px minmax(0, 1fr); gap: 9px; align-items: start; min-height: 76px; padding: 11px; border: 1px solid var(--line); border-radius: 4px; background: #fbfdfc; cursor: pointer; transition: border-color .15s ease, background .15s ease, transform .15s ease; }
+.role-option:hover { border-color: #b9cec4; background: #f4f9f6; transform: translateY(-1px); }
+.role-option:has(input:checked) { border-color: #8fb4a5; background: #edf6f1; box-shadow: inset 3px 0 var(--forest); }
+.role-option input { width: 15px; height: 15px; margin: 3px 0 0; accent-color: var(--forest); }
+.role-option span { min-width: 0; }
+.role-option strong, .role-option small { display: block; }
+.role-option strong { color: var(--forest); font-size: 11px; }
+.role-option small { margin-top: 4px; color: #7d8d87; font-size: 9px; line-height: 1.4; }
+.role-option code { grid-column: 2; width: fit-content; margin-top: 3px; padding: 2px 5px; color: #6d7f78; background: #e7efeb; font-size: 8px; }
+.access-hero { display: grid; grid-template-columns: minmax(260px, 1.45fr) repeat(3, minmax(150px, .72fr)); gap: 1px; margin-bottom: 15px; overflow: hidden; border: 1px solid var(--line); background: var(--line); }
+.access-hero > div { min-height: 132px; padding: 18px; background: #fff; }
+.access-hero > div:first-child { color: #fff; background: var(--forest); }
+.access-hero > div:first-child .eyebrow { color: var(--lime); }
+.access-hero h2 { margin: 0; font-family: Cambria, Georgia, serif; font-size: 24px; font-weight: 500; }
+.access-hero > div:first-child p:last-child { max-width: 450px; margin: 10px 0 0; color: #c6d7d1; font-size: 11px; line-height: 1.55; }
+.access-rule { display: flex; flex-direction: column; justify-content: center; }
+.access-rule > span { color: var(--coral); font-size: 9px; font-weight: 850; letter-spacing: 1px; }
+.access-rule strong { display: block; margin-top: 14px; color: var(--forest); font-size: 11px; }
+.access-rule small { display: block; margin-top: 6px; color: #83928c; font-size: 9px; line-height: 1.45; }
+.user-cell { display: flex; align-items: center; gap: 10px; }
+.user-avatar-small { display: grid; place-items: center; width: 32px; height: 32px; flex: 0 0 auto; color: var(--forest); border-radius: 50%; background: #deeadf; font-size: 9px; font-weight: 850; }
+.role-badges { display: flex; flex-wrap: wrap; gap: 5px; min-width: 150px; max-width: 330px; }
+.role-badge { display: inline-block; padding: 4px 7px; color: #36584c; border: 1px solid #d3e1da; border-radius: 999px; background: #edf5f1; font-size: 8px; font-weight: 800; letter-spacing: .35px; }
+.status-disabled { color: #8d4439; background: #f8e9e4; }
+.row-actions { display: flex; align-items: center; gap: 11px; }
+.danger-link { color: #9a463b; }
+.danger-link:hover { color: #762e26; }
+.user-dialog { width: min(760px, calc(100vw - 28px)); }
+
+@media (max-width: 1050px) {
+  .access-hero { grid-template-columns: 1fr 1fr; }
+  .access-hero > div:first-child { grid-column: 1 / -1; }
+}
+@media (max-width: 620px) {
+  .role-option-grid { grid-template-columns: 1fr; }
+  .access-hero { grid-template-columns: 1fr; }
+  .access-hero > div:first-child { grid-column: auto; }
+  .access-hero > div { min-height: auto; }
+  .row-actions { flex-direction: column; align-items: flex-start; gap: 5px; }
+}
+.self-account { color: #809089; font-size: 9px; font-weight: 700; }

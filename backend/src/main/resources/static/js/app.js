@@ -3,8 +3,11 @@ import { currentUser, signOut } from "/js/session.js";
 
 const root = document.querySelector("#view-root");
 const permissions = new Set();
-const pages = { home: "OVERVIEW", students: "STUDENTS", academics: "ACADEMICS", attendance: "ATTENDANCE", results: "ASSESSMENTS & RESULTS" };
+const pages = { home: "OVERVIEW", students: "STUDENTS", academics: "ACADEMICS", attendance: "ATTENDANCE", results: "ASSESSMENTS & RESULTS", users: "USERS & ACCESS" };
 let studentPage = 0;
+let userPage = 0;
+let availableRoles = [];
+let signedInUserId = null;
 let currentView = "home";
 
 const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
@@ -70,7 +73,8 @@ async function renderHome() {
     ["students", "Student register", "Find and maintain student records", "STUDENT_VIEW"],
     ["academics", "Academic setup", "Years, classes and subjects", "ACADEMICS_VIEW"],
     ["attendance", "Attendance", "Review class sessions", "ATTENDANCE_VIEW"],
-    ["results", "Assessments", "Assessment and grading setup", "ASSESSMENT_VIEW"]
+    ["results", "Assessments", "Assessment and grading setup", "ASSESSMENT_VIEW"],
+    ["users", "Users & access", "Create accounts and assign roles", "USER_MANAGE"]
   ].filter((item) => can(item[3]));
   document.querySelector("#quick-links").innerHTML = quickLinks.map(([view, title, description], index) => `<a class="quick-link" href="#${view}"><span class="quick-index">0${index + 1}</span><span><strong>${safe(title)}</strong><small>${safe(description)}</small></span><span class="quick-arrow" aria-hidden="true">&#8599;</span></a>`).join("") || `<p class="muted">No workspace sections have been assigned to this account.</p>`;
 
@@ -100,7 +104,7 @@ function studentDialog() {
     <div class="form-grid">
       <label>Admission number<input name="admissionNumber" required maxlength="80"></label><label>First name<input name="firstName" required maxlength="120"></label>
       <label>Middle name<input name="middleName" maxlength="120"></label><label>Last name<input name="lastName" required maxlength="120"></label>
-      <label>Date of birth<input name="dateOfBirth" type="date" required></label><label>Gender<input name="gender" required maxlength="30"></label>
+      <label>Date of birth<input name="dateOfBirth" type="date" required></label><label>Gender<select name="gender" required><option value="">Choose gender</option><option value="MALE">Male</option><option value="FEMALE">Female</option><option value="OTHER">Other</option><option value="UNKNOWN">Unknown / not stated</option></select></label>
       <label>Phone<input name="phone" type="tel" maxlength="30"></label><label>Email<input name="email" type="email" maxlength="254"></label>
       <label class="field-span">Address<input name="address" maxlength="255"></label>
     </div>
@@ -199,6 +203,154 @@ async function loadAcademicTable(type) {
   } catch (error) {
     slot.innerHTML = errorBlock(error);
   }
+}
+
+
+function userDialog() {
+  return `<dialog class="form-dialog user-dialog" id="user-dialog"><form id="user-form" class="dialog-form">
+    <div class="dialog-heading"><div><p class="eyebrow">ACCESS CONTROL</p><h2>Create user account</h2><p class="dialog-note">Create a separate sign-in for a staff member or other authorised user, then assign one or more backend roles.</p></div><button class="close-button" type="button" data-close-dialog aria-label="Close">CLOSE</button></div>
+    <div class="form-grid">
+      <label>Username<input name="username" required maxlength="120" pattern="[A-Za-z0-9._-]+" placeholder="e.g. ama.teacher"><small>Letters, numbers, dot, underscore and hyphen only.</small></label>
+      <label>Display name<input name="displayName" required maxlength="180" placeholder="e.g. Ama Mensah"></label>
+      <label class="field-span">Email <span class="optional-label">Optional</span><input name="email" type="email" maxlength="254" placeholder="name@school.edu.gh"></label>
+      <label class="field-span">Temporary password<input name="password" type="password" required minlength="12" maxlength="72" autocomplete="new-password" placeholder="At least 12 characters"><small>The user can sign in with this password. The backend requires at least 12 characters.</small></label>
+    </div>
+    <fieldset class="role-picker"><legend>Assign roles</legend><p>Select at least one role. Permissions are inherited from the role configuration in the backend.</p><div id="create-role-options" class="role-option-grid"></div></fieldset>
+    <p class="form-error" id="user-form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Create account</button></div>
+  </form></dialog>`;
+}
+
+function roleEditorDialog() {
+  return `<dialog class="form-dialog" id="role-dialog"><form id="role-form" class="dialog-form">
+    <div class="dialog-heading"><div><p class="eyebrow">ROLE ASSIGNMENT</p><h2>Update user roles</h2><p class="dialog-note" id="role-user-label"></p></div><button class="close-button" type="button" data-close-dialog aria-label="Close">CLOSE</button></div>
+    <input type="hidden" name="userId"><fieldset class="role-picker"><legend>Assigned roles</legend><p>Choose one or more roles. Saving replaces the user's current role list.</p><div id="edit-role-options" class="role-option-grid"></div></fieldset>
+    <p class="form-error" id="role-form-error" role="alert" hidden></p><div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Save roles</button></div>
+  </form></dialog>`;
+}
+
+function roleOptions(selected = []) {
+  const selectedSet = new Set(selected);
+  return availableRoles.map((role) => `<label class="role-option"><input type="checkbox" name="roleCodes" value="${safe(role.code)}" ${selectedSet.has(role.code) ? "checked" : ""}><span><strong>${safe(role.name)}</strong><small>${safe(role.description || role.code)}</small></span><code>${safe(role.code)}</code></label>`).join("");
+}
+
+async function loadAvailableRoles() {
+  if (availableRoles.length) return availableRoles;
+  if (!can("ROLE_MANAGE")) return [];
+  availableRoles = await request("/roles");
+  return availableRoles;
+}
+
+async function renderUsers(pageNumber = userPage) {
+  userPage = pageNumber;
+  const createAction = can("ROLE_MANAGE") ? `<button class="button button-primary" id="add-user">Create account <span aria-hidden="true">+</span></button>` : "";
+  root.innerHTML = `${heading("IDENTITY & ACCESS", "Users & access", "Manage individual sign-ins using the roles and permissions already defined by the backend.", createAction)}
+    <section class="access-hero">
+      <div><p class="eyebrow">HOW ACCESS WORKS</p><h2>One account per user</h2><p>Staff sign in with their own username and password. Their role controls which modules and actions appear in the interface.</p></div>
+      <div class="access-rule"><span>01</span><strong>Create an account</strong><small>Username, display name, password</small></div>
+      <div class="access-rule"><span>02</span><strong>Assign backend roles</strong><small>Teacher, Accountant, Secretary and more</small></div>
+      <div class="access-rule"><span>03</span><strong>Enable or disable access</strong><small>No shared administrator password required</small></div>
+    </section>
+    <section class="section-panel data-panel"><div class="table-toolbar"><label class="filter-field">FILTER USERS<input id="user-filter" type="search" placeholder="Name, username or role" autocomplete="off"></label><span class="result-count" id="user-count">Loading accounts...</span></div><div id="user-table" class="table-slot"><div class="loading-state compact">Loading user accounts...</div></div><div id="user-pagination" class="pagination"></div></section>
+    ${can("ROLE_MANAGE") ? userDialog() + roleEditorDialog() : ""}`;
+  bindCloseDialogs();
+  try {
+    await loadAvailableRoles();
+    const createOptions = document.querySelector("#create-role-options");
+    if (createOptions) createOptions.innerHTML = roleOptions();
+  } catch (error) {
+    setToast(`Roles could not be loaded: ${error.message}`, true);
+  }
+  document.querySelector("#add-user")?.addEventListener("click", () => document.querySelector("#user-dialog").showModal());
+  document.querySelector("#user-form")?.addEventListener("submit", createUser);
+  document.querySelector("#role-form")?.addEventListener("submit", saveUserRoles);
+  document.querySelector("#user-filter")?.addEventListener("input", filterUserRows);
+  await loadUsers();
+}
+
+function filterUserRows(event) {
+  const query = event.target.value.trim().toLowerCase();
+  document.querySelectorAll("#user-table tbody tr[data-search]").forEach((row) => { row.hidden = !row.dataset.search.includes(query); });
+}
+
+async function loadUsers() {
+  const slot = document.querySelector("#user-table");
+  try {
+    const data = await request(`/users?page=${userPage}&size=20`);
+    const rows = data.content.map((user) => {
+      const roles = user.roles?.length ? user.roles : [];
+      const roleBadges = roles.map((role) => `<span class="role-badge">${safe(role.replaceAll("_", " "))}</span>`).join("") || `<span class="muted">No roles</span>`;
+      const search = `${user.displayName} ${user.username} ${user.email || ""} ${roles.join(" ")}`.toLowerCase();
+      const isSelf = user.id === signedInUserId;
+      const actions = `<div class="row-actions">${can("ROLE_MANAGE") && !isSelf ? `<button class="text-button" type="button" data-edit-roles="${safe(user.id)}" data-name="${safe(user.displayName)}" data-roles="${safe(roles.join(","))}">Roles</button>` : ""}${!isSelf ? `<button class="text-button ${user.enabled ? "danger-link" : ""}" type="button" data-toggle-user="${safe(user.id)}" data-enabled="${user.enabled}">${user.enabled ? "Deactivate" : "Activate"}</button>` : `<span class="self-account">Current account</span>`}</div>`;
+      return `<tr data-search="${safe(search)}"><td><div class="user-cell"><span class="user-avatar-small">${safe(user.displayName.split(/\s+/).filter(Boolean).slice(0,2).map((x)=>x[0]).join("").toUpperCase() || "U")}</span><span><strong>${safe(user.displayName)}</strong><small class="cell-sub">${safe(user.email || "No email")}</small></span></div></td><td class="mono-cell">${safe(user.username)}</td><td><div class="role-badges">${roleBadges}</div></td><td><span class="status-pill ${user.enabled ? "status-active" : "status-disabled"}">${user.enabled ? "Active" : "Disabled"}</span></td><td>${actions}</td></tr>`;
+    }).join("") || emptyRow("No user accounts found.", 5);
+    slot.innerHTML = rowsTable(["USER", "USERNAME", "ROLES", "ACCESS", "ACTIONS"], rows, "User accounts");
+    document.querySelector("#user-count").textContent = `${new Intl.NumberFormat().format(data.totalElements)} accounts`;
+    document.querySelector("#user-pagination").innerHTML = `<button class="button button-quiet" data-user-page="${userPage - 1}" ${userPage <= 0 ? "disabled" : ""}>Previous</button><span>Page ${userPage + 1} of ${Math.max(data.totalPages, 1)}</span><button class="button button-quiet" data-user-page="${userPage + 1}" ${userPage + 1 >= data.totalPages ? "disabled" : ""}>Next</button>`;
+    document.querySelectorAll("[data-user-page]").forEach((button) => button.addEventListener("click", () => renderUsers(Number(button.dataset.userPage))));
+    document.querySelectorAll("[data-edit-roles]").forEach((button) => button.addEventListener("click", () => openRoleEditor(button)));
+    document.querySelectorAll("[data-toggle-user]").forEach((button) => button.addEventListener("click", () => toggleUserAccess(button)));
+  } catch (error) {
+    slot.innerHTML = errorBlock(error);
+    document.querySelector("#user-count").textContent = "";
+  }
+}
+
+async function createUser(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const error = form.querySelector("#user-form-error");
+  const data = new FormData(form);
+  const roleCodes = data.getAll("roleCodes");
+  if (!roleCodes.length) { error.textContent = "Select at least one role."; error.hidden = false; return; }
+  const payload = { username: data.get("username"), displayName: data.get("displayName"), email: data.get("email") || null, password: data.get("password"), roleCodes };
+  const button = form.querySelector("button[type=submit]");
+  button.disabled = true; error.hidden = true;
+  try {
+    await request("/users", { method: "POST", body: JSON.stringify(payload) });
+    document.querySelector("#user-dialog").close(); form.reset();
+    document.querySelector("#create-role-options").innerHTML = roleOptions();
+    setToast("User account created. They can now sign in with their own credentials.");
+    await renderUsers(0);
+  } catch (requestError) { error.textContent = requestError.message; error.hidden = false; }
+  finally { button.disabled = false; }
+}
+
+function openRoleEditor(button) {
+  const dialog = document.querySelector("#role-dialog");
+  const form = document.querySelector("#role-form");
+  const roles = (button.dataset.roles || "").split(",").filter(Boolean);
+  form.elements.userId.value = button.dataset.editRoles;
+  document.querySelector("#role-user-label").textContent = `Editing access for ${button.dataset.name}.`;
+  document.querySelector("#edit-role-options").innerHTML = roleOptions(roles);
+  dialog.showModal();
+}
+
+async function saveUserRoles(event) {
+  event.preventDefault();
+  const form = event.currentTarget;
+  const error = form.querySelector("#role-form-error");
+  const data = new FormData(form);
+  const roleCodes = data.getAll("roleCodes");
+  if (!roleCodes.length) { error.textContent = "A user must have at least one role."; error.hidden = false; return; }
+  const button = form.querySelector("button[type=submit]");
+  button.disabled = true; error.hidden = true;
+  try {
+    await request(`/users/${encodeURIComponent(data.get("userId"))}/roles`, { method: "PUT", body: JSON.stringify({ roleCodes }) });
+    document.querySelector("#role-dialog").close(); setToast("User roles updated."); await loadUsers();
+  } catch (requestError) { error.textContent = requestError.message; error.hidden = false; }
+  finally { button.disabled = false; }
+}
+
+async function toggleUserAccess(button) {
+  const userId = button.dataset.toggleUser;
+  const enabled = button.dataset.enabled === "true";
+  button.disabled = true;
+  try {
+    await request(`/users/${encodeURIComponent(userId)}/${enabled ? "deactivate" : "activate"}`, { method: "POST" });
+    setToast(enabled ? "User access disabled." : "User access restored.");
+    await loadUsers();
+  } catch (error) { setToast(error.message, true); button.disabled = false; }
 }
 
 async function renderAttendance() {
@@ -306,6 +458,7 @@ async function render() {
     else if (currentView === "academics") await renderAcademics();
     else if (currentView === "attendance") await renderAttendance();
     else if (currentView === "results") await renderResults();
+    else if (currentView === "users") await renderUsers();
   } catch (error) {
     root.innerHTML = errorBlock(error);
   }
@@ -316,6 +469,7 @@ try {
   if (!user) {
     window.location.replace("/login.html");
   } else {
+    signedInUserId = user.id;
     user.permissions.forEach((permission) => permissions.add(permission));
     document.querySelectorAll("[data-permission]").forEach((link) => {
       if (!can(link.dataset.permission)) link.remove();
