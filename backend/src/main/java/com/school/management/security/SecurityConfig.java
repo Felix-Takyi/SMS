@@ -65,6 +65,7 @@ public class SecurityConfig {
                 .sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED)
                 .sessionFixation(fixation -> fixation.migrateSession()))
             .authorizeHttpRequests(authorize -> authorize
+                .requestMatchers("/", "/index.html", "/login.html", "/css/**", "/js/**", "/assets/**").permitAll()
                 .requestMatchers("/api/v1/auth/login", "/api/v1/auth/csrf").permitAll()
                 .anyRequest().authenticated())
             .exceptionHandling(errors -> errors

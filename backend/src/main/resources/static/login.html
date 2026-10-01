@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="theme-color" content="#163e38">
+  <title>Sign in | Fieldnote School</title>
+  <link rel="stylesheet" href="/css/app.css">
+  <script type="module" src="/js/login.js"></script>
+</head>
+<body class="login-page">
+  <main class="login-layout">
+    <section class="login-aside" aria-label="School management">
+      <a class="brand brand-light" href="/login.html" aria-label="Fieldnote home">
+        <span class="brand-mark" aria-hidden="true">F</span>
+        <span>Fieldnote <small>School office</small></span>
+      </a>
+      <div class="login-message">
+        <p class="eyebrow">SCHOOL OPERATIONS</p>
+        <h1>A clearer view<br>of every school day.</h1>
+        <p>Records, attendance and academic work, together in one calm workspace.</p>
+      </div>
+      <div class="aside-foot"><span>LOCAL SCHOOL SERVER</span><span>01 / STAFF ACCESS</span></div>
+    </section>
+    <section class="login-main">
+      <div class="login-form-wrap">
+        <p class="eyebrow">WELCOME BACK</p>
+        <h2>Sign in to your office</h2>
+        <p class="muted">Use your school account to continue.</p>
+        <form id="login-form" class="form-stack" autocomplete="on">
+          <label for="username">Username</label>
+          <input id="username" name="username" autocomplete="username" required maxlength="120" autofocus>
+          <label for="password">Password</label>
+          <input id="password" name="password" type="password" autocomplete="current-password" required maxlength="128">
+          <p id="login-error" class="form-error" role="alert" hidden></p>
+          <button class="button button-primary button-wide" type="submit">Sign in <span aria-hidden="true">&#8594;</span></button>
+        </form>
+        <p class="login-note">Your account and school data stay on the school server.</p>
+      </div>
+      <footer class="login-footer"><span>FIELDNOTE SCHOOL</span><span>SECURE STAFF SIGN IN</span></footer>
+    </section>
+  </main>
+</body>
+</html>
