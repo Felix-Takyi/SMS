@@ -27,17 +27,23 @@ public class AcademicController {
     private final SubjectService subjectService;
     private final ClassStreamService classStreamService;
     private final StudentEnrollmentService studentEnrollmentService;
+    private final AttendanceSessionService attendanceSessionService;
+    private final AssessmentService assessmentService;
 
     public AcademicController(AcademicYearService academicYearService,
                              SchoolClassService schoolClassService,
                              SubjectService subjectService,
                              ClassStreamService classStreamService,
-                             StudentEnrollmentService studentEnrollmentService) {
+                             StudentEnrollmentService studentEnrollmentService,
+                             AttendanceSessionService attendanceSessionService,
+                             AssessmentService assessmentService) {
         this.academicYearService = academicYearService;
         this.schoolClassService = schoolClassService;
         this.subjectService = subjectService;
         this.classStreamService = classStreamService;
         this.studentEnrollmentService = studentEnrollmentService;
+        this.attendanceSessionService = attendanceSessionService;
+        this.assessmentService = assessmentService;
     }
 
     @GetMapping("/academic-years")
@@ -130,6 +136,54 @@ public class AcademicController {
     @PreAuthorize("hasAuthority('ACADEMICS_MANAGE')")
     public StudentEnrollmentResponse createEnrollment(@Valid @RequestBody CreateStudentEnrollmentRequest request) {
         return studentEnrollmentService.createEnrollment(request);
+    }
+
+    @GetMapping("/attendance-sessions")
+    @PreAuthorize("hasAuthority('ATTENDANCE_VIEW')")
+    public Page<AttendanceSessionResponse> listAttendanceSessions(@RequestParam(defaultValue = "0") int page,
+                                                               @RequestParam(defaultValue = "20") int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 100.");
+        }
+        return attendanceSessionService.listAttendanceSessions(PageRequest.of(page, size, Sort.by("attendanceDate").descending()));
+    }
+
+    @PostMapping("/attendance-sessions")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('ATTENDANCE_RECORD')")
+    public AttendanceSessionResponse createAttendanceSession(@Valid @RequestBody CreateAttendanceSessionRequest request) {
+        return attendanceSessionService.createAttendanceSession(request);
+    }
+
+    @GetMapping("/assessments")
+    @PreAuthorize("hasAuthority('ASSESSMENT_VIEW')")
+    public Page<AssessmentResponse> listAssessments(@RequestParam(defaultValue = "0") int page,
+                                                   @RequestParam(defaultValue = "20") int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 100.");
+        }
+        return assessmentService.listAssessments(PageRequest.of(page, size, Sort.by("assessmentDate").descending()));
+    }
+
+    @PostMapping("/assessments")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
+    public AssessmentResponse createAssessment(@Valid @RequestBody CreateAssessmentRequest request) {
+        return assessmentService.createAssessment(request);
+    }
+
+    @PostMapping("/assessment-scores")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
+    public AssessmentScore recordAssessmentScore(@Valid @RequestBody CreateAssessmentScoreRequest request) {
+        return assessmentService.recordScore(request);
+    }
+
+    @PostMapping("/attendance-records")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('ATTENDANCE_RECORD')")
+    public AttendanceRecord recordAttendance(@Valid @RequestBody CreateAttendanceRecordRequest request) {
+        return attendanceSessionService.recordAttendance(request);
     }
 
     @PostMapping("/terms")
