@@ -75,12 +75,13 @@ async function renderHome() {
   document.querySelector("#quick-links").innerHTML = quickLinks.map(([view, title, description], index) => `<a class="quick-link" href="#${view}"><span class="quick-index">0${index + 1}</span><span><strong>${safe(title)}</strong><small>${safe(description)}</small></span><span class="quick-arrow" aria-hidden="true">&#8599;</span></a>`).join("") || `<p class="muted">No workspace sections have been assigned to this account.</p>`;
 
   const metrics = [
-    ["students", "/students?page=0&size=1", (data) => data.totalElements],
-    ["years", "/academic-years?page=0&size=100", (data) => data.content.filter((item) => item.active).length],
-    ["attendance", "/attendance-sessions?page=0&size=1", (data) => data.totalElements],
-    ["assessments", "/assessments?page=0&size=1", (data) => data.totalElements]
+    ["students", "/students?page=0&size=1", (data) => data.totalElements, "STUDENT_VIEW"],
+    ["years", "/academic-years?page=0&size=100", (data) => data.content.filter((item) => item.active).length, "ACADEMICS_VIEW"],
+    ["attendance", "/attendance-sessions?page=0&size=1", (data) => data.totalElements, "ATTENDANCE_VIEW"],
+    ["assessments", "/assessments?page=0&size=1", (data) => data.totalElements, "ASSESSMENT_VIEW"]
   ];
-  await Promise.all(metrics.map(([key, path, select]) => loadMetric(key, path, select)));
+  await Promise.all(metrics.filter(([, , , permission]) => can(permission))
+    .map(([key, path, select]) => loadMetric(key, path, select)));
 
   if (can("ASSESSMENT_VIEW")) {
     try {
