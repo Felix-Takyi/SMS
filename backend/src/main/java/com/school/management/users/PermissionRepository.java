@@ -7,4 +7,6 @@ import java.util.UUID;
 
 public interface PermissionRepository extends JpaRepository<Permission, UUID> {
     List<Permission> findAllByOrderByCodeAsc();
+
+    List<Permission> findAllByCodeIn(Iterable<String> codes);
 }

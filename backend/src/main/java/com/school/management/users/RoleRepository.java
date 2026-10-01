@@ -9,5 +9,7 @@ import java.util.UUID;
 public interface RoleRepository extends JpaRepository<Role, UUID> {
     Optional<Role> findByCode(String code);
 
+    List<Role> findAllByCodeIn(Iterable<String> codes);
+
     List<Role> findAllByOrderByNameAsc();
 }

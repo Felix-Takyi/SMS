@@ -40,6 +40,13 @@ public class AuthController {
         return ResponseEntity.noContent().build();
     }
 
+    @PostMapping("/change-password")
+    public ResponseEntity<Void> changePassword(@AuthenticationPrincipal AppUser user,
+                                               @Valid @RequestBody ChangePasswordRequest request) {
+        authService.changePassword(user, request);
+        return ResponseEntity.noContent().build();
+    }
+
     @GetMapping("/me")
     public AuthResponse currentUser(@AuthenticationPrincipal AppUser user) {
         var permissions = user.getAuthorities().stream()

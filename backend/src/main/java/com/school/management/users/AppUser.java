@@ -110,6 +110,21 @@ public class AppUser implements UserDetails {
         return roles;
     }
 
+    public void replaceRoles(Set<Role> assignedRoles) {
+        roles.clear();
+        roles.addAll(assignedRoles);
+    }
+
+    public void setEnabled(boolean enabled) {
+        this.enabled = enabled;
+        this.updatedAt = Instant.now();
+    }
+
+    public void changePasswordHash(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+        this.updatedAt = Instant.now();
+    }
+
     public int getFailedLoginAttempts() {
         return failedLoginAttempts;
     }

@@ -65,4 +65,9 @@ public class Role {
     public Set<Permission> getPermissions() {
         return permissions;
     }
+
+    public void replacePermissions(Set<Permission> grantedPermissions) {
+        permissions.clear();
+        permissions.addAll(grantedPermissions);
+    }
 }
