@@ -1,5 +1,6 @@
 package com.school.management.academics;
 
+import java.math.BigDecimal;
 import java.util.List;
 import java.util.UUID;
 
@@ -29,6 +30,7 @@ public class AcademicController {
     private final StudentEnrollmentService studentEnrollmentService;
     private final AttendanceSessionService attendanceSessionService;
     private final AssessmentService assessmentService;
+    private final GradingScaleService gradingScaleService;
 
     public AcademicController(AcademicYearService academicYearService,
                              SchoolClassService schoolClassService,
@@ -36,7 +38,8 @@ public class AcademicController {
                              ClassStreamService classStreamService,
                              StudentEnrollmentService studentEnrollmentService,
                              AttendanceSessionService attendanceSessionService,
-                             AssessmentService assessmentService) {
+                             AssessmentService assessmentService,
+                             GradingScaleService gradingScaleService) {
         this.academicYearService = academicYearService;
         this.schoolClassService = schoolClassService;
         this.subjectService = subjectService;
@@ -44,6 +47,7 @@ public class AcademicController {
         this.studentEnrollmentService = studentEnrollmentService;
         this.attendanceSessionService = attendanceSessionService;
         this.assessmentService = assessmentService;
+        this.gradingScaleService = gradingScaleService;
     }
 
     @GetMapping("/academic-years")
@@ -177,6 +181,30 @@ public class AcademicController {
     @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
     public AssessmentScore recordAssessmentScore(@Valid @RequestBody CreateAssessmentScoreRequest request) {
         return assessmentService.recordScore(request);
+    }
+
+    @GetMapping("/grading-scales")
+    @PreAuthorize("hasAuthority('ASSESSMENT_VIEW')")
+    public Page<GradingScaleResponse> listGradingScales(@RequestParam(defaultValue = "0") int page,
+                                                       @RequestParam(defaultValue = "20") int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 100.");
+        }
+        return gradingScaleService.listGradingScales(PageRequest.of(page, size, Sort.by("name").ascending()));
+    }
+
+    @PostMapping("/grading-scales")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
+    public GradingScaleResponse createGradingScale(@Valid @RequestBody CreateGradingScaleRequest request) {
+        return gradingScaleService.createGradingScale(request);
+    }
+
+    @GetMapping("/grading-scales/{gradingScaleId}/grade")
+    @PreAuthorize("hasAuthority('ASSESSMENT_VIEW')")
+    public GradeBandResponse findGrade(@PathVariable UUID gradingScaleId,
+                                       @RequestParam BigDecimal percentage) {
+        return gradingScaleService.findGrade(gradingScaleId, percentage);
     }
 
     @PostMapping("/attendance-records")
