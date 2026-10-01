@@ -26,15 +26,18 @@ public class AcademicController {
     private final SchoolClassService schoolClassService;
     private final SubjectService subjectService;
     private final ClassStreamService classStreamService;
+    private final StudentEnrollmentService studentEnrollmentService;
 
     public AcademicController(AcademicYearService academicYearService,
                              SchoolClassService schoolClassService,
                              SubjectService subjectService,
-                             ClassStreamService classStreamService) {
+                             ClassStreamService classStreamService,
+                             StudentEnrollmentService studentEnrollmentService) {
         this.academicYearService = academicYearService;
         this.schoolClassService = schoolClassService;
         this.subjectService = subjectService;
         this.classStreamService = classStreamService;
+        this.studentEnrollmentService = studentEnrollmentService;
     }
 
     @GetMapping("/academic-years")
@@ -110,6 +113,23 @@ public class AcademicController {
     @PreAuthorize("hasAuthority('ACADEMICS_VIEW')")
     public List<TermResponse> listTerms(@PathVariable String code) {
         return academicYearService.listTermsForAcademicYear(code);
+    }
+
+    @GetMapping("/student-enrollments")
+    @PreAuthorize("hasAuthority('ACADEMICS_VIEW')")
+    public Page<StudentEnrollmentResponse> listEnrollments(@RequestParam(defaultValue = "0") int page,
+                                                         @RequestParam(defaultValue = "20") int size) {
+        if (page < 0 || size < 1 || size > 100) {
+            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 100.");
+        }
+        return studentEnrollmentService.listEnrollments(PageRequest.of(page, size, Sort.by("enrollmentDate").descending()));
+    }
+
+    @PostMapping("/student-enrollments")
+    @ResponseStatus(HttpStatus.CREATED)
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE')")
+    public StudentEnrollmentResponse createEnrollment(@Valid @RequestBody CreateStudentEnrollmentRequest request) {
+        return studentEnrollmentService.createEnrollment(request);
     }
 
     @PostMapping("/terms")
