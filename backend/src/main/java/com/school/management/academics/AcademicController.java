@@ -277,7 +277,7 @@ public class AcademicController {
 
     @PostMapping("/grading-scales")
     @ResponseStatus(HttpStatus.CREATED)
-    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
+    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE') and authentication.principal.roles.?[code == 'SUPER_ADMIN'].size() > 0")
     public GradingScaleResponse createGradingScale(@Valid @RequestBody CreateGradingScaleRequest request) {
         return gradingScaleService.createGradingScale(request);
     }
