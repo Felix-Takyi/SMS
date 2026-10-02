@@ -66,7 +66,7 @@ public class UserController {
     }
 
     @GetMapping("/roles")
-    @PreAuthorize("hasAuthority('ROLE_MANAGE')")
+    @PreAuthorize("hasAuthority('ROLE_MANAGE') or hasAuthority('USER_MANAGE')")
     public java.util.List<RoleResponse> roles() {
         return roleService.listRoles();
     }

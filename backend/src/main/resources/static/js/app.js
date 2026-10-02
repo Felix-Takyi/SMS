@@ -380,7 +380,7 @@ function userDialog() {
 }
 function roleEditorDialog() { return `<dialog class="form-dialog user-dialog" id="role-dialog"><form id="role-form" class="dialog-form"><input type="hidden" name="userId"><div class="dialog-heading"><div><p class="eyebrow">ROLE ASSIGNMENT</p><h2>Edit user roles</h2><p class="dialog-note" id="role-user-label"></p></div><button class="close-button" type="button" data-close-dialog>CLOSE</button></div><fieldset class="role-picker"><legend>Assigned roles</legend><div class="role-option-grid" id="edit-role-options"></div></fieldset><p class="form-error" id="role-form-error" hidden></p><div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Save roles</button></div></form></dialog>`; }
 function roleOptions(selected = []) { return availableRoles.length ? availableRoles.map((role) => `<label class="role-option"><input type="checkbox" name="roleCodes" value="${safe(role.code)}" ${selected.includes(role.code) ? "checked" : ""}><span><strong>${safe(role.name)}</strong><small>${safe(role.description || role.code)}</small></span></label>`).join("") : `<p class="muted">No roles are available to assign.</p>`; }
-async function loadAvailableRoles() { if (!can("ROLE_MANAGE")) return; availableRoles = await request("/roles"); }
+async function loadAvailableRoles() { availableRoles = await request("/roles"); }
 
 async function renderUsers(pageNumber = userPage) {
   userPage = pageNumber; if (!can("USER_MANAGE")) { root.innerHTML = errorBlock({status:403}); return; }
