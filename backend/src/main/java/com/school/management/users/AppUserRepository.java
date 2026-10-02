@@ -8,11 +8,15 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.data.jpa.repository.Query;
 
 import java.util.Optional;
+import java.util.List;
 import java.util.UUID;
 
 public interface AppUserRepository extends JpaRepository<AppUser, UUID> {
     @EntityGraph(attributePaths = {"roles", "roles.permissions"})
     Optional<AppUser> findByUsernameIgnoreCase(String username);
+
+    @EntityGraph(attributePaths = "roles")
+    List<AppUser> findDistinctByEnabledTrueAndRoles_CodeOrderByDisplayNameAsc(String roleCode);
 
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select user from AppUser user where lower(user.username) = lower(:username)")
