@@ -33,10 +33,11 @@ public class ResultPdfController {
                                                          @RequestParam UUID classId,
                                                          @RequestParam(required = false) UUID termId,
                                                          @RequestParam(required = false) UUID subjectId,
+                                                         @RequestParam(required = false) UUID gradingScaleId,
                                                          @RequestParam(defaultValue = "false") boolean inline,
                                                          @AuthenticationPrincipal AppUser currentUser,
                                                          HttpServletRequest request) {
-        byte[] pdf = resultPdfService.generateStudentResultPdf(studentId, academicYearId, classId, termId, subjectId, currentUser, request);
+        byte[] pdf = resultPdfService.generateStudentResultPdf(studentId, academicYearId, classId, termId, subjectId, gradingScaleId, currentUser, request);
         String filename = buildFilename(studentId, classId, termId, "student");
         ContentDisposition disposition = inline
             ? ContentDisposition.inline().filename(filename).build()
@@ -53,10 +54,11 @@ public class ResultPdfController {
                                                        @RequestParam UUID academicYearId,
                                                        @RequestParam(required = false) UUID termId,
                                                        @RequestParam(required = false) UUID subjectId,
+                                                       @RequestParam(required = false) UUID gradingScaleId,
                                                        @RequestParam(defaultValue = "false") boolean inline,
                                                        @AuthenticationPrincipal AppUser currentUser,
                                                        HttpServletRequest request) {
-        byte[] pdf = resultPdfService.generateClassResultPdf(classId, academicYearId, termId, subjectId, currentUser, request);
+        byte[] pdf = resultPdfService.generateClassResultPdf(classId, academicYearId, termId, subjectId, gradingScaleId, currentUser, request);
         String filename = buildFilename(classId, termId, null, "class");
         ContentDisposition disposition = inline
             ? ContentDisposition.inline().filename(filename).build()

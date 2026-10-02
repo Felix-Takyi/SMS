@@ -1,11 +1,12 @@
 package com.school.management.academics;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.math.BigDecimal;
-import java.util.UUID;
 import java.time.LocalDate;
 import java.util.List;
+import java.util.UUID;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -13,6 +14,29 @@ import org.springframework.test.util.ReflectionTestUtils;
 import com.school.management.students.Student;
 
 class ResultPdfServiceTest {
+    @Test
+    void selectGradingScaleUsesExplicitChoiceWhenMultipleScalesExist() {
+        GradingScale first = new GradingScale("Primary", List.of());
+        GradingScale second = new GradingScale("Secondary", List.of());
+        UUID selectedId = UUID.randomUUID();
+        ReflectionTestUtils.setField(first, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(second, "id", selectedId);
+
+        assertEquals(second, ResultPdfService.selectGradingScale(List.of(first, second), selectedId));
+    }
+
+    @Test
+    void selectGradingScaleRejectsAmbiguousChoice() {
+        List<GradingScale> scales = List.of(
+            new GradingScale("Primary", List.of()),
+            new GradingScale("Secondary", List.of())
+        );
+
+        IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
+            () -> ResultPdfService.selectGradingScale(scales, null));
+        assertEquals("Select a grading scale before generating the result PDF.", exception.getMessage());
+    }
+
     @Test
     void buildStudentResultSummaryCalculatesAverageAndGrade() {
         Student student = new Student(

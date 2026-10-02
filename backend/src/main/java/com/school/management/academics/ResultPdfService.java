@@ -77,6 +77,7 @@ public class ResultPdfService {
                                           UUID classId,
                                           UUID termId,
                                           UUID subjectId,
+                                          UUID gradingScaleId,
                                           AppUser actor,
                                           HttpServletRequest request) {
         ensureAuthorizedUser();
@@ -106,10 +107,7 @@ public class ResultPdfService {
             throw new IllegalArgumentException("No result scores are available for this student in the selected class.");
         }
 
-        GradingScale gradingScale = gradingScales.findAll().stream()
-            .sorted(Comparator.comparing(GradingScale::getName))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("No grading scale configured."));
+        GradingScale gradingScale = selectGradingScale(gradingScales.findAll(), gradingScaleId);
 
         StudentResultSummary summary = buildStudentResultSummary(classAssessments, studentScores, gradingScale);
         byte[] pdf = renderStudentResultPdf(student, academicYear, schoolClass, term, summary);
@@ -132,6 +130,7 @@ public class ResultPdfService {
                                          UUID academicYearId,
                                          UUID termId,
                                          UUID subjectId,
+                                         UUID gradingScaleId,
                                          AppUser actor,
                                          HttpServletRequest request) {
         ensureAuthorizedUser();
@@ -150,10 +149,7 @@ public class ResultPdfService {
             throw new IllegalArgumentException("No class results are available for the selected academic year and class.");
         }
 
-        GradingScale gradingScale = gradingScales.findAll().stream()
-            .sorted(Comparator.comparing(GradingScale::getName))
-            .findFirst()
-            .orElseThrow(() -> new IllegalArgumentException("No grading scale configured."));
+        GradingScale gradingScale = selectGradingScale(gradingScales.findAll(), gradingScaleId);
 
         List<ClassResultRow> classRows = students.findAll().stream()
             .filter(student -> !student.getStatus().equalsIgnoreCase("ARCHIVED"))
@@ -272,6 +268,22 @@ public class ResultPdfService {
                 && percentage.compareTo(band.getMaximumPercentage()) <= 0)
             .findFirst()
             .orElse(null);
+    }
+
+    static GradingScale selectGradingScale(List<GradingScale> availableScales, UUID gradingScaleId) {
+        if (availableScales.isEmpty()) {
+            throw new IllegalArgumentException("No grading scale configured.");
+        }
+        if (gradingScaleId != null) {
+            return availableScales.stream()
+                .filter(scale -> gradingScaleId.equals(scale.getId()))
+                .findFirst()
+                .orElseThrow(() -> new IllegalArgumentException("The selected grading scale was not found."));
+        }
+        if (availableScales.size() == 1) {
+            return availableScales.getFirst();
+        }
+        throw new IllegalArgumentException("Select a grading scale before generating the result PDF.");
     }
 
     private static String formatDate(LocalDate date) {
