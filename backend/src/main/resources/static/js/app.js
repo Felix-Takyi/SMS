@@ -294,7 +294,7 @@ function teacherAssignmentDialog() { return `<dialog class="form-dialog" id="tea
 
 function timetableEntryDialog() { return `<dialog class="form-dialog" id="timetable-entry-dialog"><form id="timetable-entry-form" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">TIMETABLE</p><h2>Add timetable entry</h2></div><button class="close-button" type="button" data-close-dialog>CLOSE</button></div><div class="form-grid"><label class="field-span">Assigned class and subject<select name="assignmentId" required></select></label><label>Day<select name="dayOfWeek" required><option value="MONDAY">Monday</option><option value="TUESDAY">Tuesday</option><option value="WEDNESDAY">Wednesday</option><option value="THURSDAY">Thursday</option><option value="FRIDAY">Friday</option><option value="SATURDAY">Saturday</option><option value="SUNDAY">Sunday</option></select></label><label>Room<input name="room" maxlength="80" required></label><label>Starts<input name="startTime" type="time" required></label><label>Ends<input name="endTime" type="time" required></label></div><p class="form-error" id="timetable-entry-error" hidden></p><div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Save timetable entry</button></div></form></dialog>`; }
 
-async function openTeacherAssignmentDialog() {
+async function openTeacherAssignmentDialog(teacherUserId = "") {
   const [years, classes, subjects, teachers] = await Promise.all([
     request("/academic-years?page=0&size=100"), request("/academic-classes?page=0&size=100"),
     request("/subjects?page=0&size=100"), request("/teachers/available")
@@ -305,6 +305,7 @@ async function openTeacherAssignmentDialog() {
   form.elements.subjectId.innerHTML = subjects.content.filter(s => s.active).map(s => `<option value="${safe(s.id)}">${safe(s.name)}</option>`).join("");
   form.elements.teacherUserId.innerHTML = teachers.map(t => `<option value="${safe(t.id)}">${safe(t.displayName)} (${safe(t.username)})</option>`).join("");
   if (!teachers.length) { setToast("Create or enable a user with the TEACHER role before assigning classes.", true); return; }
+  if (teacherUserId) form.elements.teacherUserId.value = teacherUserId;
   document.querySelector("#teacher-assignment-dialog").showModal();
 }
 
@@ -315,9 +316,27 @@ async function submitTeacherAssignment(event) {
 }
 
 async function loadTeacherAssignmentsTable(slot) {
-  const assignments = await request("/teacher-subject-assignments");
-  const rows = assignments.map(a => `<tr><td>${safe(a.academicYearCode)}</td><td><strong>${safe(a.schoolClassName)}</strong></td><td>${safe(a.subjectName)}</td><td>${safe(a.teacherName)}</td><td>${can("TIMETABLE_MANAGE") ? `<button class="text-button danger-link" data-remove-assignment="${safe(a.id)}">Remove</button>` : ""}</td></tr>`).join("") || emptyRow("No teacher assignments configured.", 5);
-  slot.innerHTML = rowsTable(["ACADEMIC YEAR", "CLASS", "SUBJECT", "TEACHER", "ACTIONS"], rows, "Teacher class and subject assignments");
+  const [teachers, assignments] = await Promise.all([
+    request("/teachers/available"),
+    request("/teacher-subject-assignments")
+  ]);
+  const assignmentsByTeacher = new Map();
+  for (const assignment of assignments) {
+    const teacherAssignments = assignmentsByTeacher.get(assignment.teacherUserId) || [];
+    teacherAssignments.push(assignment);
+    assignmentsByTeacher.set(assignment.teacherUserId, teacherAssignments);
+  }
+  const manager = can("TIMETABLE_MANAGE");
+  const rows = teachers.map(teacher => {
+    const teacherAssignments = assignmentsByTeacher.get(teacher.id) || [];
+    const teaching = teacherAssignments.length
+      ? teacherAssignments.map(assignment => `<div class="teacher-assignment-item"><span><strong>${safe(assignment.subjectName)}</strong><small>${safe(assignment.schoolClassName)} · ${safe(assignment.academicYearCode)}</small></span>${manager ? `<button class="text-button danger-link" type="button" data-remove-assignment="${safe(assignment.id)}" aria-label="Remove ${safe(assignment.subjectName)} assignment">Remove</button>` : ""}</div>`).join("")
+      : `<span class="muted">No class or subject assigned</span>`;
+    return `<tr><td><strong>${safe(teacher.displayName)}</strong><small class="cell-sub mono-cell">${safe(teacher.username)}</small></td><td class="teacher-assignment-cell">${teaching}</td><td><span class="status-pill ${teacherAssignments.length ? "status-active" : ""}">${teacherAssignments.length ? `${teacherAssignments.length} assigned` : "Available"}</span></td><td>${manager ? `<button class="text-button" type="button" data-assign-teacher="${safe(teacher.id)}">Assign subject</button>` : ""}</td></tr>`;
+  }).join("") || emptyRow("No enabled teacher accounts found.", 4);
+  document.querySelector("#academic-context").textContent = `${teachers.length} available teachers · ${assignments.length} class-subject assignments`;
+  slot.innerHTML = rowsTable(["TEACHER", "SUBJECTS AND CLASSES", "STATUS", "ACTIONS"], rows, "Teachers and assigned subjects");
+  slot.querySelectorAll("[data-assign-teacher]").forEach(button => button.addEventListener("click", () => openTeacherAssignmentDialog(button.dataset.assignTeacher)));
   slot.querySelectorAll("[data-remove-assignment]").forEach(button => button.addEventListener("click", async () => { if (!confirm("Remove this teacher assignment?")) return; try { await request(`/teacher-subject-assignments/${button.dataset.removeAssignment}`, { method: "DELETE" }); setToast("Teacher assignment removed."); await loadAcademicTable("teacher-assignments"); } catch (e) { setToast(e.message, true); } }));
 }
 

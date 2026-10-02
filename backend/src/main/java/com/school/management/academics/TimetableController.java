@@ -31,7 +31,7 @@ public class TimetableController {
     }
 
     @GetMapping("/teachers/available")
-    @PreAuthorize("hasAuthority('TIMETABLE_MANAGE')")
+    @PreAuthorize("hasAuthority('ACADEMICS_VIEW')")
     public List<TeacherOptionResponse> listAvailableTeachers() {
         return timetables.listTeachers();
     }

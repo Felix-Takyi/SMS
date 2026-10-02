@@ -149,6 +149,11 @@ tbody td { padding: 13px 12px; color: #485b55; border-bottom: 1px solid #edf1ee;
 tbody tr:last-child td { border-bottom: 0; }
 tbody td strong { color: #203a33; font-size: 11px; }
 .cell-sub { display: block; margin-top: 4px; color: #87958f; font-size: 10px; }
+.teacher-assignment-cell { min-width: 260px; white-space: normal; }
+.teacher-assignment-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 5px 0; }
+.teacher-assignment-item + .teacher-assignment-item { border-top: 1px solid #edf1ee; }
+.teacher-assignment-item span { display: grid; gap: 3px; }
+.teacher-assignment-item small { color: #87958f; font-size: 10px; }
 .mono-cell { color: #37574d; font-family: Consolas, "Courier New", monospace; font-size: 10px; }
 .status-pill { display: inline-block; padding: 4px 8px; color: #7b6852; background: #f4eee4; font-size: 9px; font-weight: 750; text-transform: capitalize; }
 .status-active { color: #28624a; background: #e3f1e8; }
