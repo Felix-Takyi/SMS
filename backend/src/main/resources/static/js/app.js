@@ -21,6 +21,8 @@ let signedInUserId = null;
 let signedInUser = null;
 let currentView = "home";
 let canGenerateResultPdfs = false;
+let canEditAcademicCatalogue = false;
+let academicRecords = new Map();
 
 const safe = (value) => String(value ?? "").replace(/[&<>"']/g, (character) => ({
   "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;"
@@ -227,15 +229,19 @@ function academicCreateDialog() {
 }
 
 async function renderAcademics() {
-  const tabs = ["years", "terms", "classes", "streams", "subjects", "enrollments"];
+  const tabs = ["years", "terms", "classes", "streams", "subjects", "enrollments", "teacher-assignments", "timetable"];
+  const canManageTimetable = can("TIMETABLE_MANAGE");
+  const canAddAcademicRecords = can("ACADEMICS_MANAGE") || canManageTimetable;
   root.innerHTML = `${heading("ACADEMIC SETUP", "Academic catalogue", "Manage years, terms, classes, streams, subjects and student enrolments.")}
-    <section class="section-panel data-panel"><div class="tab-row" role="tablist" aria-label="Academic catalogue">${tabs.map((t, i) => `<button class="tab-button ${i === 0 ? "active" : ""}" data-academic-tab="${t}" role="tab" aria-selected="${i === 0}">${t.charAt(0).toUpperCase() + t.slice(1)}</button>`).join("")}</div><div class="table-toolbar"><span id="academic-context" class="result-count"></span>${can("ACADEMICS_MANAGE") ? `<button class="button button-primary" id="academic-add">Add record +</button>` : ""}</div><div id="academic-table" class="table-slot"><div class="loading-state compact">Loading catalogue...</div></div></section>${can("ACADEMICS_MANAGE") ? academicCreateDialog() : ""}`;
+    <section class="section-panel data-panel"><div class="tab-row" role="tablist" aria-label="Academic catalogue">${tabs.map((t, i) => `<button class="tab-button ${i === 0 ? "active" : ""}" data-academic-tab="${t}" role="tab" aria-selected="${i === 0}">${t === "teacher-assignments" ? "Teacher assignments" : t.charAt(0).toUpperCase() + t.slice(1)}</button>`).join("")}</div><div class="table-toolbar"><span id="academic-context" class="result-count"></span>${canAddAcademicRecords ? `<button class="button button-primary" id="academic-add">Add record +</button>` : ""}</div><div id="academic-table" class="table-slot"><div class="loading-state compact">Loading catalogue...</div></div></section>${can("ACADEMICS_MANAGE") ? academicCreateDialog() : ""}${canManageTimetable ? teacherAssignmentDialog()+timetableEntryDialog() : ""}`;
   bindCloseDialogs();
   let currentTab = "years";
-  const selectTab = async (type) => { currentTab = type; document.querySelectorAll("[data-academic-tab]").forEach((tab) => { const selected = tab.dataset.academicTab === type; tab.classList.toggle("active", selected); tab.setAttribute("aria-selected", String(selected)); }); document.querySelector("#academic-add")?.setAttribute("data-kind", type); await loadAcademicTable(type); };
+  const selectTab = async (type) => { currentTab = type; document.querySelectorAll("[data-academic-tab]").forEach((tab) => { const selected = tab.dataset.academicTab === type; tab.classList.toggle("active", selected); tab.setAttribute("aria-selected", String(selected)); }); const add = document.querySelector("#academic-add"); if (add) { add.dataset.kind = type; add.textContent = type === "teacher-assignments" ? "Assign teacher +" : type === "timetable" ? "Add timetable entry +" : "Add record +"; add.hidden = type === "teacher-assignments" || type === "timetable" ? !canManageTimetable : !can("ACADEMICS_MANAGE"); } await loadAcademicTable(type); };
   document.querySelectorAll("[data-academic-tab]").forEach((button) => button.addEventListener("click", () => selectTab(button.dataset.academicTab)));
-  document.querySelector("#academic-add")?.addEventListener("click", () => openAcademicDialog(currentTab));
+  document.querySelector("#academic-add")?.addEventListener("click", () => { if (currentTab === "teacher-assignments") openTeacherAssignmentDialog(); else if (currentTab === "timetable") openTimetableEntryDialog(); else openAcademicDialog(currentTab); });
   document.querySelector("#academic-form")?.addEventListener("submit", submitAcademicRecord);
+  document.querySelector("#teacher-assignment-form")?.addEventListener("submit", submitTeacherAssignment);
+  document.querySelector("#timetable-entry-form")?.addEventListener("submit", submitTimetableEntry);
   await selectTab("years");
 }
 

@@ -69,6 +69,13 @@ public class AcademicController {
         return academicYearService.createAcademicYear(request);
     }
 
+    @PutMapping("/academic-years/{academicYearId}")
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE') and authentication.principal.roles.?[code == 'SUPER_ADMIN'].size() > 0")
+    public AcademicYearResponse updateAcademicYear(@PathVariable UUID academicYearId,
+            @Valid @RequestBody CreateAcademicYearRequest request) {
+        return academicYearService.updateAcademicYear(academicYearId, request);
+    }
+
     @GetMapping("/academic-classes")
     @PreAuthorize("hasAuthority('ACADEMICS_VIEW')")
     public Page<SchoolClassResponse> listSchoolClasses(@RequestParam(defaultValue = "0") int page,
@@ -86,6 +93,13 @@ public class AcademicController {
         return schoolClassService.createSchoolClass(request);
     }
 
+    @PutMapping("/academic-classes/{classId}")
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE') and authentication.principal.roles.?[code == 'SUPER_ADMIN'].size() > 0")
+    public SchoolClassResponse updateSchoolClass(@PathVariable UUID classId,
+            @Valid @RequestBody CreateSchoolClassRequest request) {
+        return schoolClassService.updateSchoolClass(classId, request);
+    }
+
     @GetMapping("/subjects")
     @PreAuthorize("hasAuthority('ACADEMICS_VIEW')")
     public Page<SubjectResponse> listSubjects(@RequestParam(defaultValue = "0") int page,
@@ -101,6 +115,13 @@ public class AcademicController {
     @PreAuthorize("hasAuthority('ACADEMICS_MANAGE')")
     public SubjectResponse createSubject(@Valid @RequestBody CreateSubjectRequest request) {
         return subjectService.createSubject(request);
+    }
+
+    @PutMapping("/subjects/{subjectId}")
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE') and authentication.principal.roles.?[code == 'SUPER_ADMIN'].size() > 0")
+    public SubjectResponse updateSubject(@PathVariable UUID subjectId,
+            @Valid @RequestBody CreateSubjectRequest request) {
+        return subjectService.updateSubject(subjectId, request);
     }
 
     @DeleteMapping("/subjects/{subjectId}")
@@ -128,10 +149,23 @@ public class AcademicController {
         return classStreamService.createClassStream(request);
     }
 
+    @PutMapping("/class-streams/{streamId}")
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE') and authentication.principal.roles.?[code == 'SUPER_ADMIN'].size() > 0")
+    public ClassStreamResponse updateClassStream(@PathVariable UUID streamId,
+            @Valid @RequestBody CreateClassStreamRequest request) {
+        return classStreamService.updateClassStream(streamId, request);
+    }
+
     @GetMapping("/academic-years/{code}/terms")
     @PreAuthorize("hasAuthority('ACADEMICS_VIEW')")
     public List<TermResponse> listTerms(@PathVariable String code) {
         return academicYearService.listTermsForAcademicYear(code);
+    }
+
+    @PutMapping("/terms/{termId}")
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE') and authentication.principal.roles.?[code == 'SUPER_ADMIN'].size() > 0")
+    public TermResponse updateTerm(@PathVariable UUID termId, @Valid @RequestBody UpdateTermRequest request) {
+        return academicYearService.updateTerm(termId, request);
     }
 
     @GetMapping("/student-enrollments")
@@ -149,6 +183,13 @@ public class AcademicController {
     @PreAuthorize("hasAuthority('ACADEMICS_MANAGE')")
     public StudentEnrollmentResponse createEnrollment(@Valid @RequestBody CreateStudentEnrollmentRequest request) {
         return studentEnrollmentService.createEnrollment(request);
+    }
+
+    @PutMapping("/student-enrollments/{enrollmentId}")
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE') and authentication.principal.roles.?[code == 'SUPER_ADMIN'].size() > 0")
+    public StudentEnrollmentResponse updateEnrollment(@PathVariable UUID enrollmentId,
+            @Valid @RequestBody CreateStudentEnrollmentRequest request) {
+        return studentEnrollmentService.updateEnrollment(enrollmentId, request);
     }
 
     @GetMapping("/attendance-sessions")
