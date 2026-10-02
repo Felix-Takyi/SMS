@@ -54,7 +54,7 @@ public class TimetableService {
 
     @Transactional(readOnly = true)
     public List<TeacherSubjectAssignmentResponse> listAssignments(UUID academicYearId, UUID schoolClassId) {
-        return assignments.findAll().stream()
+        return assignments.findAllWithRelations().stream()
             .filter(assignment -> academicYearId == null || assignment.getAcademicYear().getId().equals(academicYearId))
             .filter(assignment -> schoolClassId == null || assignment.getSchoolClass().getId().equals(schoolClassId))
             .sorted(Comparator.comparing((TeacherSubjectAssignment assignment) -> assignment.getSchoolClass().getName())
@@ -91,7 +91,7 @@ public class TimetableService {
         if (!assignments.existsById(assignmentId)) {
             throw new IllegalArgumentException("Teacher assignment was not found.");
         }
-        if (entries.findAll().stream().anyMatch(entry -> entry.getAssignment().getId().equals(assignmentId))) {
+        if (entries.findAllWithRelations().stream().anyMatch(entry -> entry.getAssignment().getId().equals(assignmentId))) {
             throw new IllegalArgumentException("Remove this assignment's timetable entries before deleting it.");
         }
         assignments.deleteById(assignmentId);
@@ -105,7 +105,7 @@ public class TimetableService {
         if (schoolClassId != null && !schoolClasses.existsById(schoolClassId)) {
             throw new IllegalArgumentException("Class was not found.");
         }
-        return entries.findAll().stream()
+        return entries.findAllWithRelations().stream()
             .filter(entry -> entry.getAssignment().getAcademicYear().getId().equals(academicYearId))
             .filter(entry -> schoolClassId == null || entry.getAssignment().getSchoolClass().getId().equals(schoolClassId))
             .sorted(Comparator.comparingInt((TimetableEntry entry) -> entry.getDayOfWeek().getValue())
@@ -197,7 +197,7 @@ public class TimetableService {
 
     private void ensureNoConflict(UUID ignoredEntryId, TeacherSubjectAssignment assignment, DayOfWeek day,
                                   LocalTime start, LocalTime end, String room) {
-        boolean conflict = entries.findAll().stream()
+        boolean conflict = entries.findAllWithRelations().stream()
             .filter(existing -> !existing.getId().equals(ignoredEntryId))
             .filter(existing -> existing.getDayOfWeek() == day)
             .filter(existing -> existing.getAssignment().getAcademicYear().getId().equals(assignment.getAcademicYear().getId()))

@@ -4,11 +4,16 @@ import java.util.UUID;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.security.access.AccessDeniedException;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import com.school.management.students.Student;
 import com.school.management.students.StudentRepository;
+import com.school.management.users.AppUser;
+import com.school.management.users.Role;
 
 @Service
 public class AssessmentService {
@@ -18,19 +23,22 @@ public class AssessmentService {
     private final AssessmentRepository assessments;
     private final AssessmentScoreRepository assessmentScores;
     private final StudentRepository students;
+    private final TeacherSubjectAssignmentRepository teacherAssignments;
 
     public AssessmentService(SubjectRepository subjects,
                             AcademicYearRepository academicYears,
                             SchoolClassRepository schoolClasses,
                             AssessmentRepository assessments,
                             AssessmentScoreRepository assessmentScores,
-                            StudentRepository students) {
+                            StudentRepository students,
+                            TeacherSubjectAssignmentRepository teacherAssignments) {
         this.subjects = subjects;
         this.academicYears = academicYears;
         this.schoolClasses = schoolClasses;
         this.assessments = assessments;
         this.assessmentScores = assessmentScores;
         this.students = students;
+        this.teacherAssignments = teacherAssignments;
     }
 
     @Transactional(readOnly = true)
@@ -48,6 +56,8 @@ public class AssessmentService {
 
     @Transactional
     public AssessmentResponse createAssessment(CreateAssessmentRequest request) {
+        ensureTeacherHasAssignment(request);
+
         Subject subject = subjects.findById(request.subjectId())
             .orElseThrow(() -> new IllegalArgumentException("Subject was not found."));
         AcademicYear academicYear = academicYears.findById(request.academicYearId())
@@ -70,6 +80,20 @@ public class AssessmentService {
         Assessment assessment = new Assessment(subject, academicYear, schoolClass, assessmentType,
             request.totalMarks(), request.assessmentDate(), request.dueDate());
         return AssessmentResponse.from(assessments.save(assessment));
+    }
+
+    private void ensureTeacherHasAssignment(CreateAssessmentRequest request) {
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        if (authentication == null || !(authentication.getPrincipal() instanceof AppUser user)) {
+            return;
+        }
+
+        boolean isSuperAdmin = user.getRoles().stream().map(Role::getCode).anyMatch("SUPER_ADMIN"::equals);
+        boolean isTeacher = user.getRoles().stream().map(Role::getCode).anyMatch("TEACHER"::equals);
+        if (isTeacher && !isSuperAdmin && !teacherAssignments.existsByAcademicYearIdAndSchoolClassIdAndSubjectIdAndTeacher_Id(
+                request.academicYearId(), request.schoolClassId(), request.subjectId(), user.getId())) {
+            throw new AccessDeniedException("You can only create assessments for subjects assigned to you in this class and academic year.");
+        }
     }
 
     @Transactional
