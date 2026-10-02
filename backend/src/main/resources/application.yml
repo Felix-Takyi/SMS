@@ -1,10 +1,12 @@
 spring:
   application:
     name: school-management
+
   datasource:
     url: ${DB_URL:jdbc:postgresql://localhost:5432/school_management}
     username: ${DB_USERNAME:school_app}
     password: ${DB_PASSWORD}
+
   jpa:
     open-in-view: false
     hibernate:
@@ -14,13 +16,16 @@ spring:
         jdbc:
           time_zone: UTC
         format_sql: false
+
   flyway:
     enabled: true
     locations: classpath:db/migration
+
   jackson:
     default-property-inclusion: non_null
+
 server:
-   port: ${PORT:${SERVER_PORT:8081}}
+  port: ${PORT:${SERVER_PORT:8081}}
   forward-headers-strategy: framework
   servlet:
     session:
@@ -29,10 +34,12 @@ server:
         http-only: true
         secure: ${SESSION_COOKIE_SECURE:true}
         same-site: lax
+
 school:
   bootstrap:
     username: ${BOOTSTRAP_ADMIN_USERNAME:}
     password: ${BOOTSTRAP_ADMIN_PASSWORD:}
+
 logging:
   level:
     org.springframework.security: INFO
