@@ -248,45 +248,120 @@ async function renderAcademics() {
 async function loadAcademicTable(type) {
   const slot = document.querySelector("#academic-table"); slot.innerHTML = `<div class="loading-state compact">Loading ${safe(type)}...</div>`;
   try {
+    if (type === "teacher-assignments") { await loadTeacherAssignmentsTable(slot); return; }
+    if (type === "timetable") { await loadTimetableTable(slot); return; }
     if (type === "years") {
       const data = await request("/academic-years?page=0&size=100");
-      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.code)}</td><td><strong>${safe(item.name)}</strong></td><td>${dateText(item.startDate)}</td><td>${dateText(item.endDate)}</td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td></tr>`).join("") || emptyRow("No academic years configured.", 5);
-      slot.innerHTML = rowsTable(["CODE", "ACADEMIC YEAR", "START", "END", "STATUS"], rows, "Academic years");
+      academicRecords = new Map(data.content.map((item) => [item.id, item]));
+      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.code)}</td><td><strong>${safe(item.name)}</strong></td><td>${dateText(item.startDate)}</td><td>${dateText(item.endDate)}</td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td><td>${editAcademicButton("years", item)}</td></tr>`).join("") || emptyRow("No academic years configured.", 6);
+      slot.innerHTML = rowsTable(["CODE", "ACADEMIC YEAR", "START", "END", "STATUS", "ACTIONS"], rows, "Academic years");
     } else if (type === "terms") {
       const years = await request("/academic-years?page=0&size=100");
       const all = []; for (const year of years.content) { try { const terms = await request(`/academic-years/${encodeURIComponent(year.code)}/terms`); all.push(...terms); } catch {} }
-      const rows = all.map((item) => `<tr><td class="mono-cell">${safe(item.academicYearCode)}</td><td><strong>${safe(item.name)}</strong></td><td>${dateText(item.startDate)}</td><td>${dateText(item.endDate)}</td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td></tr>`).join("") || emptyRow("No terms configured.", 5);
-      slot.innerHTML = rowsTable(["YEAR", "TERM", "START", "END", "STATUS"], rows, "Terms");
+      academicRecords = new Map(all.map((item) => [item.id, item]));
+      const rows = all.map((item) => `<tr><td class="mono-cell">${safe(item.academicYearCode)}</td><td><strong>${safe(item.name)}</strong></td><td>${dateText(item.startDate)}</td><td>${dateText(item.endDate)}</td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td><td>${editAcademicButton("terms", item)}</td></tr>`).join("") || emptyRow("No terms configured.", 6);
+      slot.innerHTML = rowsTable(["YEAR", "TERM", "START", "END", "STATUS", "ACTIONS"], rows, "Terms");
     } else if (type === "classes") {
       const data = await request("/academic-classes?page=0&size=100");
-      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.code)}</td><td><strong>${safe(item.name)}</strong></td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td></tr>`).join("") || emptyRow("No classes configured.", 3);
-      slot.innerHTML = rowsTable(["CODE", "CLASS", "STATUS"], rows, "Classes");
+      academicRecords = new Map(data.content.map((item) => [item.id, item]));
+      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.code)}</td><td><strong>${safe(item.name)}</strong></td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td><td>${editAcademicButton("classes", item)}</td></tr>`).join("") || emptyRow("No classes configured.", 4);
+      slot.innerHTML = rowsTable(["CODE", "CLASS", "STATUS", "ACTIONS"], rows, "Classes");
     } else if (type === "streams") {
       const classes = await request("/academic-classes?page=0&size=100"); const streams = [];
       for (const c of classes.content) { try { const page = await request(`/academic-classes/${c.id}/streams?page=0&size=100`); streams.push(...page.content); } catch {} }
-      const rows = streams.map((item) => `<tr><td class="mono-cell">${safe(item.schoolClassCode)}</td><td><strong>${safe(item.name)}</strong></td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td></tr>`).join("") || emptyRow("No class streams configured.", 3);
-      slot.innerHTML = rowsTable(["CLASS", "STREAM", "STATUS"], rows, "Class streams");
+      academicRecords = new Map(streams.map((item) => [item.id, item]));
+      const rows = streams.map((item) => `<tr><td class="mono-cell">${safe(item.schoolClassCode)}</td><td><strong>${safe(item.name)}</strong></td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td><td>${editAcademicButton("streams", item)}</td></tr>`).join("") || emptyRow("No class streams configured.", 4);
+      slot.innerHTML = rowsTable(["CLASS", "STREAM", "STATUS", "ACTIONS"], rows, "Class streams");
     } else if (type === "subjects") {
       const data = await request("/subjects?page=0&size=100");
-      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.code)}</td><td><strong>${safe(item.name)}</strong></td><td>${safe(item.description || "—")}</td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td><td>${can("ACADEMICS_MANAGE") ? `<button class="text-button danger-link" data-delete-subject="${item.id}" data-name="${safe(item.name)}">Remove</button>` : ""}</td></tr>`).join("") || emptyRow("No subjects configured.", 5);
+      academicRecords = new Map(data.content.map((item) => [item.id, item]));
+      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.code)}</td><td><strong>${safe(item.name)}</strong></td><td>${safe(item.description || "—")}</td><td><span class="status-pill ${item.active ? "status-active" : ""}">${item.active ? "Active" : "Inactive"}</span></td><td>${editAcademicButton("subjects", item)}${can("ACADEMICS_MANAGE") ? ` <button class="text-button danger-link" data-delete-subject="${item.id}" data-name="${safe(item.name)}">Remove</button>` : ""}</td></tr>`).join("") || emptyRow("No subjects configured.", 5);
       slot.innerHTML = rowsTable(["CODE", "SUBJECT", "DESCRIPTION", "STATUS", "ACTIONS"], rows, "Subjects");
       document.querySelectorAll("[data-delete-subject]").forEach((button) => button.addEventListener("click", async () => { if (!confirm(`Remove ${button.dataset.name}? This cannot be undone.`)) return; try { await request(`/subjects/${button.dataset.deleteSubject}`, { method: "DELETE" }); setToast("Subject removed."); await loadAcademicTable("subjects"); } catch (error) { setToast(error.message, true); } }));
     } else if (type === "enrollments") {
       const data = await request("/student-enrollments?page=0&size=100");
-      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.studentAdmissionNumber)}</td><td>${safe(item.academicYearCode)}</td><td><strong>${safe(item.schoolClassCode)}</strong></td><td>${safe(item.classStreamName || "—")}</td><td><span class="status-pill">${safe(item.status)}</span></td><td>${dateText(item.enrollmentDate)}</td></tr>`).join("") || emptyRow("No enrollments configured.", 6);
-      slot.innerHTML = rowsTable(["STUDENT", "YEAR", "CLASS", "STREAM", "STATUS", "DATE"], rows, "Student enrollments");
+      academicRecords = new Map(data.content.map((item) => [item.id, item]));
+      const rows = data.content.map((item) => `<tr><td class="mono-cell">${safe(item.studentAdmissionNumber)}</td><td>${safe(item.academicYearCode)}</td><td><strong>${safe(item.schoolClassCode)}</strong></td><td>${safe(item.classStreamName || "—")}</td><td><span class="status-pill">${safe(item.status)}</span></td><td>${dateText(item.enrollmentDate)}</td><td>${editAcademicButton("enrollments", item)}</td></tr>`).join("") || emptyRow("No enrollments configured.", 7);
+      slot.innerHTML = rowsTable(["STUDENT", "YEAR", "CLASS", "STREAM", "STATUS", "DATE", "ACTIONS"], rows, "Student enrollments");
     }
+    document.querySelectorAll("[data-edit-academic]").forEach((button) => button.addEventListener("click", () => openAcademicDialog(button.dataset.kind, academicRecords.get(button.dataset.id))));
   } catch (error) { slot.innerHTML = errorBlock(error); }
 }
 
-async function openAcademicDialog(kind) {
-  const dialog = document.querySelector("#academic-dialog"); const form = document.querySelector("#academic-form"); form.reset(); form.elements.kind.value = kind; const fields = document.querySelector("#academic-form-fields"); const title = document.querySelector("#academic-dialog-title");
-  if (kind === "years") { title.textContent = "Add academic year"; fields.innerHTML = `<label>Code<input name="code" required maxlength="40" placeholder="2026-2027"></label><label>Name<input name="name" required maxlength="150"></label><label>Start date<input type="date" name="startDate" required></label><label>End date<input type="date" name="endDate" required></label><label><span>Active</span><select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
-  if (kind === "terms") { const years = await request("/academic-years?page=0&size=100"); title.textContent = "Add term"; fields.innerHTML = `<label>Academic year<select name="academicYearCode" required>${years.content.map(y => `<option value="${safe(y.code)}">${safe(y.name)}</option>`).join("")}</select></label><label>Term name<input name="name" required maxlength="80" placeholder="Term 1"></label><label>Start date<input type="date" name="startDate" required></label><label>End date<input type="date" name="endDate" required></label>`; }
-  if (kind === "classes") { title.textContent = "Add class"; fields.innerHTML = `<label>Code<input name="code" required maxlength="40" placeholder="BASIC6"></label><label>Name<input name="name" required maxlength="150" placeholder="Basic 6"></label><label>Active<select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
-  if (kind === "streams") { const classes = await request("/academic-classes?page=0&size=100"); title.textContent = "Add class stream"; fields.innerHTML = `<label>Class<select name="schoolClassId" required>${classes.content.map(c => `<option value="${c.id}">${safe(c.name)}</option>`).join("")}</select></label><label>Stream name<input name="name" required maxlength="100" placeholder="A"></label><label>Active<select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
-  if (kind === "subjects") { title.textContent = "Add subject"; fields.innerHTML = `<label>Code<input name="code" required maxlength="40" placeholder="MATH"></label><label>Name<input name="name" required maxlength="150" placeholder="Mathematics"></label><label class="field-span">Description<input name="description" maxlength="500"></label><label>Active<select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
-  if (kind === "enrollments") { const [students, years, classes] = await Promise.all([request("/students?page=0&size=500"), request("/academic-years?page=0&size=100"), request("/academic-classes?page=0&size=100")]); title.textContent = "Enroll student"; fields.innerHTML = `<label>Student<select name="studentId" required>${students.content.map(s => `<option value="${s.id}">${safe(s.admissionNumber)} — ${safe([s.firstName,s.lastName].join(" "))}</option>`).join("")}</select></label><label>Academic year<select name="academicYearId" required>${years.content.map(y => `<option value="${y.id}">${safe(y.name)}</option>`).join("")}</select></label><label>Class<select name="schoolClassId" required>${classes.content.map(c => `<option value="${c.id}">${safe(c.name)}</option>`).join("")}</select></label><label>Stream<select name="classStreamId"><option value="">No stream</option></select></label><label>Status<select name="status"><option value="ACTIVE">Active</option><option value="TRANSFERRED">Transferred</option><option value="GRADUATED">Graduated</option></select></label>`; const classSelect = fields.querySelector('[name="schoolClassId"]'); const streamSelect = fields.querySelector('[name="classStreamId"]'); const loadStreams = async () => { const data = await request(`/academic-classes/${classSelect.value}/streams?page=0&size=100`); streamSelect.innerHTML = `<option value="">No stream</option>${data.content.map(s => `<option value="${s.id}">${safe(s.name)}</option>`).join("")}`; }; classSelect.addEventListener("change", loadStreams); await loadStreams(); }
+function editAcademicButton(kind, item) { return canEditAcademicCatalogue ? `<button class="text-button" type="button" data-edit-academic data-kind="${kind}" data-id="${item.id}">Edit</button>` : ""; }
+
+function teacherAssignmentDialog() { return `<dialog class="form-dialog" id="teacher-assignment-dialog"><form id="teacher-assignment-form" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">TEACHER ASSIGNMENT</p><h2>Assign teacher</h2></div><button class="close-button" type="button" data-close-dialog>CLOSE</button></div><div class="form-grid"><label>Academic year<select name="academicYearId" required></select></label><label>Class<select name="schoolClassId" required></select></label><label>Subject<select name="subjectId" required></select></label><label>Teacher<select name="teacherUserId" required></select></label></div><p class="form-error" id="teacher-assignment-error" hidden></p><div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Save assignment</button></div></form></dialog>`; }
+
+function timetableEntryDialog() { return `<dialog class="form-dialog" id="timetable-entry-dialog"><form id="timetable-entry-form" class="dialog-form"><div class="dialog-heading"><div><p class="eyebrow">TIMETABLE</p><h2>Add timetable entry</h2></div><button class="close-button" type="button" data-close-dialog>CLOSE</button></div><div class="form-grid"><label class="field-span">Assigned class and subject<select name="assignmentId" required></select></label><label>Day<select name="dayOfWeek" required><option value="MONDAY">Monday</option><option value="TUESDAY">Tuesday</option><option value="WEDNESDAY">Wednesday</option><option value="THURSDAY">Thursday</option><option value="FRIDAY">Friday</option><option value="SATURDAY">Saturday</option><option value="SUNDAY">Sunday</option></select></label><label>Room<input name="room" maxlength="80" required></label><label>Starts<input name="startTime" type="time" required></label><label>Ends<input name="endTime" type="time" required></label></div><p class="form-error" id="timetable-entry-error" hidden></p><div class="dialog-actions"><button class="button button-quiet" type="button" data-close-dialog>Cancel</button><button class="button button-primary" type="submit">Save timetable entry</button></div></form></dialog>`; }
+
+async function openTeacherAssignmentDialog() {
+  const [years, classes, subjects, teachers] = await Promise.all([
+    request("/academic-years?page=0&size=100"), request("/academic-classes?page=0&size=100"),
+    request("/subjects?page=0&size=100"), request("/teachers/available")
+  ]);
+  const form = document.querySelector("#teacher-assignment-form");
+  form.elements.academicYearId.innerHTML = years.content.map(y => `<option value="${safe(y.id)}">${safe(y.name)}</option>`).join("");
+  form.elements.schoolClassId.innerHTML = classes.content.filter(c => c.active).map(c => `<option value="${safe(c.id)}">${safe(c.name)}</option>`).join("");
+  form.elements.subjectId.innerHTML = subjects.content.filter(s => s.active).map(s => `<option value="${safe(s.id)}">${safe(s.name)}</option>`).join("");
+  form.elements.teacherUserId.innerHTML = teachers.map(t => `<option value="${safe(t.id)}">${safe(t.displayName)} (${safe(t.username)})</option>`).join("");
+  if (!teachers.length) { setToast("Create or enable a user with the TEACHER role before assigning classes.", true); return; }
+  document.querySelector("#teacher-assignment-dialog").showModal();
+}
+
+async function submitTeacherAssignment(event) {
+  event.preventDefault(); const form = event.currentTarget; const error = document.querySelector("#teacher-assignment-error");
+  try { await request("/teacher-subject-assignments", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(form))) }); document.querySelector("#teacher-assignment-dialog").close(); form.reset(); setToast("Teacher assigned to the class and subject."); await loadAcademicTable("teacher-assignments"); }
+  catch (e) { error.textContent = e.message; error.hidden = false; }
+}
+
+async function loadTeacherAssignmentsTable(slot) {
+  const assignments = await request("/teacher-subject-assignments");
+  const rows = assignments.map(a => `<tr><td>${safe(a.academicYearCode)}</td><td><strong>${safe(a.schoolClassName)}</strong></td><td>${safe(a.subjectName)}</td><td>${safe(a.teacherName)}</td><td>${can("TIMETABLE_MANAGE") ? `<button class="text-button danger-link" data-remove-assignment="${safe(a.id)}">Remove</button>` : ""}</td></tr>`).join("") || emptyRow("No teacher assignments configured.", 5);
+  slot.innerHTML = rowsTable(["ACADEMIC YEAR", "CLASS", "SUBJECT", "TEACHER", "ACTIONS"], rows, "Teacher class and subject assignments");
+  slot.querySelectorAll("[data-remove-assignment]").forEach(button => button.addEventListener("click", async () => { if (!confirm("Remove this teacher assignment?")) return; try { await request(`/teacher-subject-assignments/${button.dataset.removeAssignment}`, { method: "DELETE" }); setToast("Teacher assignment removed."); await loadAcademicTable("teacher-assignments"); } catch (e) { setToast(e.message, true); } }));
+}
+
+async function openTimetableEntryDialog() {
+  const assignments = await request("/teacher-subject-assignments");
+  if (!assignments.length) { setToast("Assign teachers to classes and subjects before creating the timetable.", true); return; }
+  const form = document.querySelector("#timetable-entry-form");
+  form.elements.assignmentId.innerHTML = assignments.map(a => `<option value="${safe(a.id)}">${safe(a.schoolClassName)} · ${safe(a.subjectName)} · ${safe(a.teacherName)} · ${safe(a.academicYearCode)}</option>`).join("");
+  document.querySelector("#timetable-entry-dialog").showModal();
+}
+
+async function submitTimetableEntry(event) {
+  event.preventDefault(); const form = event.currentTarget; const error = document.querySelector("#timetable-entry-error");
+  try { await request("/timetable-entries", { method: "POST", body: JSON.stringify(Object.fromEntries(new FormData(form))) }); document.querySelector("#timetable-entry-dialog").close(); form.reset(); setToast("Timetable entry created."); await loadAcademicTable("timetable"); }
+  catch (e) { error.textContent = e.message; error.hidden = false; }
+}
+
+async function loadTimetableTable(slot) {
+  const [years, classes] = await Promise.all([request("/academic-years?page=0&size=100"), request("/academic-classes?page=0&size=100")]);
+  slot.innerHTML = `<div class="table-toolbar"><label>Academic year<select id="timetable-year-filter">${years.content.map(y => `<option value="${safe(y.id)}">${safe(y.name)}</option>`).join("")}</select></label><label>Class<select id="timetable-class-filter"><option value="">All classes</option>${classes.content.map(c => `<option value="${safe(c.id)}">${safe(c.name)}</option>`).join("")}</select></label><button class="button button-quiet" type="button" id="print-timetable">Print PDF</button></div><div id="timetable-table" class="table-slot"></div>`;
+  const yearFilter = slot.querySelector("#timetable-year-filter"); const classFilter = slot.querySelector("#timetable-class-filter");
+  const activeYear = years.content.find(y => y.active); if (activeYear) yearFilter.value = activeYear.id;
+  const refresh = async () => {
+    if (!yearFilter.value) { slot.querySelector("#timetable-table").innerHTML = `<div class="inline-notice"><span>No academic years configured.</span></div>`; return; }
+    const params = new URLSearchParams({ academicYearId: yearFilter.value }); if (classFilter.value) params.set("schoolClassId", classFilter.value);
+    const entries = await request(`/timetable-entries?${params}`);
+    const rows = entries.map(item => `<tr><td>${safe(item.dayOfWeek)}</td><td>${safe(item.startTime)}–${safe(item.endTime)}</td><td><strong>${safe(item.schoolClassName)}</strong></td><td>${safe(item.subjectName)}</td><td>${safe(item.teacherName)}</td><td>${safe(item.room)}</td><td>${can("TIMETABLE_MANAGE") ? `<button class="text-button danger-link" data-remove-timetable="${safe(item.id)}">Remove</button>` : ""}</td></tr>`).join("") || emptyRow("No timetable entries for this selection.", 7);
+    slot.querySelector("#timetable-table").innerHTML = rowsTable(["DAY", "TIME", "CLASS", "SUBJECT", "TEACHER", "ROOM", "ACTIONS"], rows, "School timetable");
+    slot.querySelectorAll("[data-remove-timetable]").forEach(button => button.addEventListener("click", async () => { if (!confirm("Remove this timetable entry?")) return; try { await request(`/timetable-entries/${button.dataset.removeTimetable}`, { method: "DELETE" }); setToast("Timetable entry removed."); await refresh(); } catch (e) { setToast(e.message, true); } }));
+    slot.querySelector("#print-timetable").onclick = () => { const pdfParams = new URLSearchParams({ academicYearId: yearFilter.value, inline: "true" }); if (classFilter.value) pdfParams.set("schoolClassId", classFilter.value); window.open(`/api/v1/timetable.pdf?${pdfParams}`, "_blank", "noopener,noreferrer"); };
+  };
+  yearFilter.addEventListener("change", refresh); classFilter.addEventListener("change", refresh); await refresh();
+}
+
+async function openAcademicDialog(kind, record = null) {
+  const dialog = document.querySelector("#academic-dialog"); const form = document.querySelector("#academic-form"); form.reset(); form.dataset.recordId = record?.id || ""; form.elements.kind.value = kind; const fields = document.querySelector("#academic-form-fields"); const title = document.querySelector("#academic-dialog-title");
+  if (kind === "years") { title.textContent = `${record ? "Edit" : "Add"} academic year`; fields.innerHTML = `<label>Code<input name="code" required maxlength="40" placeholder="2026-2027"></label><label>Name<input name="name" required maxlength="150"></label><label>Start date<input type="date" name="startDate" required></label><label>End date<input type="date" name="endDate" required></label><label><span>Active</span><select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
+  if (kind === "terms") { const years = await request("/academic-years?page=0&size=100"); title.textContent = `${record ? "Edit" : "Add"} term`; fields.innerHTML = `<label>Academic year<select name="academicYearCode" required>${years.content.map(y => `<option value="${safe(y.code)}">${safe(y.name)}</option>`).join("")}</select></label><label>Term name<input name="name" required maxlength="80" placeholder="Term 1"></label><label>Start date<input type="date" name="startDate" required></label><label>End date<input type="date" name="endDate" required></label>${record ? `<label>Active<select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>` : ""}`; }
+  if (kind === "classes") { title.textContent = `${record ? "Edit" : "Add"} class`; fields.innerHTML = `<label>Code<input name="code" required maxlength="40" placeholder="BASIC6"></label><label>Name<input name="name" required maxlength="150" placeholder="Basic 6"></label><label>Active<select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
+  if (kind === "streams") { const classes = await request("/academic-classes?page=0&size=100"); title.textContent = `${record ? "Edit" : "Add"} class stream`; fields.innerHTML = `<label>Class<select name="schoolClassId" required>${classes.content.map(c => `<option value="${c.id}">${safe(c.name)}</option>`).join("")}</select></label><label>Stream name<input name="name" required maxlength="100" placeholder="A"></label><label>Active<select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
+  if (kind === "subjects") { title.textContent = `${record ? "Edit" : "Add"} subject`; fields.innerHTML = `<label>Code<input name="code" required maxlength="40" placeholder="MATH"></label><label>Name<input name="name" required maxlength="150" placeholder="Mathematics"></label><label class="field-span">Description<input name="description" maxlength="500"></label><label>Active<select name="active"><option value="true">Yes</option><option value="false">No</option></select></label>`; }
+  if (kind === "enrollments") { const [students, years, classes] = await Promise.all([request("/students?page=0&size=500"), request("/academic-years?page=0&size=100"), request("/academic-classes?page=0&size=100")]); title.textContent = `${record ? "Edit" : "Enroll"} student`; fields.innerHTML = `<label>Student<select name="studentId" required>${students.content.map(s => `<option value="${s.id}">${safe(s.admissionNumber)} — ${safe([s.firstName,s.lastName].join(" "))}</option>`).join("")}</select></label><label>Academic year<select name="academicYearId" required>${years.content.map(y => `<option value="${y.id}">${safe(y.name)}</option>`).join("")}</select></label><label>Class<select name="schoolClassId" required>${classes.content.map(c => `<option value="${c.id}">${safe(c.name)}</option>`).join("")}</select></label><label>Stream<select name="classStreamId"><option value="">No stream</option></select></label><label>Status<select name="status"><option value="ACTIVE">Active</option><option value="TRANSFERRED">Transferred</option><option value="GRADUATED">Graduated</option></select></label>`; const classSelect = fields.querySelector('[name="schoolClassId"]'); const streamSelect = fields.querySelector('[name="classStreamId"]'); const loadStreams = async () => { const data = await request(`/academic-classes/${classSelect.value}/streams?page=0&size=100`); streamSelect.innerHTML = `<option value="">No stream</option>${data.content.map(s => `<option value="${s.id}">${safe(s.name)}</option>`).join("")}`; }; classSelect.addEventListener("change", loadStreams); await loadStreams(); }
+  if (record) { for (const [name, value] of Object.entries(record)) { const control = form.elements.namedItem(name); if (control) control.value = value ?? ""; } }
+  if (kind === "enrollments" && record) { const classSelect = fields.querySelector('[name="schoolClassId"]'); const streamSelect = fields.querySelector('[name="classStreamId"]'); const data = await request(`/academic-classes/${classSelect.value}/streams?page=0&size=100`); streamSelect.innerHTML = `<option value="">No stream</option>${data.content.map(s => `<option value="${s.id}">${safe(s.name)}</option>`).join("")}`; streamSelect.value = record.classStreamId || ""; }
   dialog.showModal();
 }
 
@@ -295,7 +370,9 @@ async function submitAcademicRecord(event) {
   for (const key of ["active"]) if (key in data) data[key] = data[key] === "true";
   if (data.classStreamId === "") data.classStreamId = null;
   const endpoints = { years: "/academic-years", terms: "/terms", classes: "/academic-classes", streams: "/class-streams", subjects: "/subjects", enrollments: "/student-enrollments" };
-  try { await request(endpoints[kind], { method: "POST", body: JSON.stringify(data) }); document.querySelector("#academic-dialog").close(); setToast("Academic record created."); await loadAcademicTable(kind); } catch (e) { error.textContent = e.message; error.hidden = false; }
+  const recordId = form.dataset.recordId;
+  const endpoint = recordId ? `${endpoints[kind]}/${encodeURIComponent(recordId)}` : endpoints[kind];
+  try { await request(endpoint, { method: recordId ? "PUT" : "POST", body: JSON.stringify(data) }); document.querySelector("#academic-dialog").close(); setToast(recordId ? "Academic record updated." : "Academic record created."); await loadAcademicTable(kind); } catch (e) { error.textContent = e.message; error.hidden = false; }
 }
 
 function userDialog() {
@@ -394,6 +471,7 @@ try {
   else {
     signedInUser = user; signedInUserId = user.id; user.permissions.forEach((permission) => permissions.add(permission));
     canGenerateResultPdfs = (user.roles || []).some((role) => role === "ADMIN" || role === "SUPER_ADMIN") && (can("RESULT_VIEW") || can("REPORT_VIEW"));
+    canEditAcademicCatalogue = (user.roles || []).includes("SUPER_ADMIN") && can("ACADEMICS_MANAGE");
     document.querySelectorAll("[data-permission]").forEach((link) => { if (!can(link.dataset.permission)) link.remove(); });
     document.querySelector("#user-name").textContent = user.displayName; document.querySelector("#user-role").textContent = user.roles.join(" / ") || "School staff"; document.querySelector("#user-avatar").textContent = user.displayName.split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0]).join("").toUpperCase() || "--"; document.querySelector("#topbar-user").textContent=user.displayName; document.querySelector("#today-label").textContent=new Intl.DateTimeFormat(undefined,{day:"numeric",month:"short",year:"numeric"}).format(new Date());
     document.querySelector("#sign-out").addEventListener("click",async()=>{try{await signOut();}catch{}window.location.replace("/login.html");}); document.querySelector("#menu-toggle").addEventListener("click",(event)=>{const open=document.querySelector("#sidebar").classList.toggle("sidebar-open");event.currentTarget.setAttribute("aria-expanded",String(open));}); window.addEventListener("hashchange",render); await render();
