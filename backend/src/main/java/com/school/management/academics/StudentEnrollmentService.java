@@ -50,6 +50,9 @@ public class StudentEnrollmentService {
         if (request.classStreamId() != null) {
             classStream = classStreams.findById(request.classStreamId())
                 .orElseThrow(() -> new IllegalArgumentException("Class stream was not found."));
+            if (!classStream.getSchoolClass().getId().equals(schoolClass.getId())) {
+                throw new IllegalArgumentException("The selected stream does not belong to the selected class.");
+            }
         }
 
         String status = request.status().trim();
@@ -59,5 +62,31 @@ public class StudentEnrollmentService {
 
         StudentEnrollment enrollment = new StudentEnrollment(student, academicYear, schoolClass, classStream, status);
         return StudentEnrollmentResponse.from(enrollments.save(enrollment));
+    }
+
+    @Transactional
+    public StudentEnrollmentResponse updateEnrollment(UUID id, CreateStudentEnrollmentRequest request) {
+        StudentEnrollment enrollment = enrollments.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Student enrollment was not found."));
+        Student student = students.findById(request.studentId())
+            .orElseThrow(() -> new IllegalArgumentException("Student was not found."));
+        AcademicYear academicYear = academicYears.findById(request.academicYearId())
+            .orElseThrow(() -> new IllegalArgumentException("Academic year was not found."));
+        SchoolClass schoolClass = schoolClasses.findById(request.schoolClassId())
+            .orElseThrow(() -> new IllegalArgumentException("School class was not found."));
+        ClassStream classStream = request.classStreamId() == null ? null : classStreams.findById(request.classStreamId())
+            .orElseThrow(() -> new IllegalArgumentException("Class stream was not found."));
+        if (classStream != null && !classStream.getSchoolClass().getId().equals(schoolClass.getId())) {
+            throw new IllegalArgumentException("The selected stream does not belong to the selected class.");
+        }
+
+        String status = request.status().trim();
+        if ("ACTIVE".equalsIgnoreCase(status)
+                && enrollments.existsByStudentIdAndAcademicYearIdAndStatusAndIdNot(
+                    student.getId(), academicYear.getId(), "ACTIVE", id)) {
+            throw new IllegalArgumentException("This student already has an active enrollment for the academic year.");
+        }
+        enrollment.update(student, academicYear, schoolClass, classStream, status);
+        return StudentEnrollmentResponse.from(enrollment);
     }
 }

@@ -42,4 +42,18 @@ public class ClassStreamService {
         ClassStream classStream = new ClassStream(schoolClass, name, request.active());
         return ClassStreamResponse.from(classStreams.save(classStream));
     }
+
+    @Transactional
+    public ClassStreamResponse updateClassStream(UUID id, CreateClassStreamRequest request) {
+        ClassStream stream = classStreams.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Class stream was not found."));
+        SchoolClass schoolClass = schoolClasses.findById(request.schoolClassId())
+            .orElseThrow(() -> new IllegalArgumentException("School class was not found."));
+        String name = request.name().trim();
+        if (classStreams.existsBySchoolClassIdAndNameIgnoreCaseAndIdNot(schoolClass.getId(), name, id)) {
+            throw new IllegalArgumentException("A stream with that name already exists for this class.");
+        }
+        stream.update(schoolClass, name, request.active());
+        return ClassStreamResponse.from(stream);
+    }
 }

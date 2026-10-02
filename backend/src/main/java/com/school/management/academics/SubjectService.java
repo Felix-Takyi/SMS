@@ -39,6 +39,18 @@ public class SubjectService {
     }
 
     @Transactional
+    public SubjectResponse updateSubject(UUID id, CreateSubjectRequest request) {
+        Subject subject = subjects.findById(id)
+            .orElseThrow(() -> new IllegalArgumentException("Subject was not found."));
+        String code = request.code().trim();
+        if (subjects.existsByCodeIgnoreCaseAndIdNot(code, id)) {
+            throw new IllegalArgumentException("A subject with that code already exists.");
+        }
+        subject.update(code, request.name(), request.description(), request.active());
+        return SubjectResponse.from(subject);
+    }
+
+    @Transactional
     public void deleteSubject(UUID subjectId) {
         if (!subjects.existsById(subjectId)) {
             throw new IllegalArgumentException("Subject was not found.");

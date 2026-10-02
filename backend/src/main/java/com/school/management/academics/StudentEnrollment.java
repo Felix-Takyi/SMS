@@ -72,6 +72,16 @@ public class StudentEnrollment {
         this.updatedAt = this.createdAt;
     }
 
+    public void update(Student student, AcademicYear academicYear, SchoolClass schoolClass,
+                       ClassStream classStream, String status) {
+        this.student = student;
+        this.academicYear = academicYear;
+        this.schoolClass = schoolClass;
+        this.classStream = classStream;
+        this.status = status.trim();
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() {
         return id;
     }
