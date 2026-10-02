@@ -56,6 +56,15 @@ public class Term {
         this.updatedAt = this.createdAt;
     }
 
+    public void update(AcademicYear academicYear, String name, LocalDate startDate, LocalDate endDate, boolean active) {
+        this.academicYear = academicYear;
+        this.name = name.trim();
+        this.startDate = startDate;
+        this.endDate = endDate;
+        this.active = active;
+        this.updatedAt = Instant.now();
+    }
+
     public UUID getId() {
         return id;
     }

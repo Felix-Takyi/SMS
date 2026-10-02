@@ -57,16 +57,11 @@ public class AcademicYear {
         this.updatedAt = this.createdAt;
     }
 
-    public void update(String name, LocalDate startDate, LocalDate endDate, boolean active) {
-        if (name != null && !name.isBlank()) {
-            this.name = name.trim();
-        }
-        if (startDate != null) {
-            this.startDate = startDate;
-        }
-        if (endDate != null) {
-            this.endDate = endDate;
-        }
+    public void update(String code, String name, LocalDate startDate, LocalDate endDate, boolean active) {
+        this.code = code.trim();
+        this.name = name.trim();
+        this.startDate = startDate;
+        this.endDate = endDate;
         this.active = active;
         this.updatedAt = Instant.now();
     }

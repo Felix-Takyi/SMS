@@ -52,13 +52,10 @@ public class Subject {
         this.updatedAt = this.createdAt;
     }
 
-    public void update(String name, String description, boolean active) {
-        if (name != null && !name.isBlank()) {
-            this.name = name.trim();
-        }
-        if (description != null) {
-            this.description = description.trim();
-        }
+    public void update(String code, String name, String description, boolean active) {
+        this.code = code.trim();
+        this.name = name.trim();
+        this.description = description == null ? "" : description.trim();
         this.active = active;
         this.updatedAt = Instant.now();
     }

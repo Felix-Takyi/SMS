@@ -48,10 +48,9 @@ public class SchoolClass {
         this.updatedAt = this.createdAt;
     }
 
-    public void update(String name, boolean active) {
-        if (name != null && !name.isBlank()) {
-            this.name = name.trim();
-        }
+    public void update(String code, String name, boolean active) {
+        this.code = code.trim();
+        this.name = name.trim();
         this.active = active;
         this.updatedAt = Instant.now();
     }

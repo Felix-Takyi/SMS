@@ -52,10 +52,9 @@ public class ClassStream {
         this.updatedAt = this.createdAt;
     }
 
-    public void update(String name, boolean active) {
-        if (name != null && !name.isBlank()) {
-            this.name = name.trim();
-        }
+    public void update(SchoolClass schoolClass, String name, boolean active) {
+        this.schoolClass = schoolClass;
+        this.name = name.trim();
         this.active = active;
         this.updatedAt = Instant.now();
     }
