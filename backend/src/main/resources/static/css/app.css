@@ -299,3 +299,17 @@ tbody td strong { color: #203a33; font-size: 11px; }
   .row-actions { flex-direction: column; align-items: flex-start; gap: 5px; }
 }
 .self-account { color: #809089; font-size: 9px; font-weight: 700; }
+
+/* Extended management controls */
+.action-cluster { display: flex; flex-wrap: wrap; gap: 8px; justify-content: flex-end; }
+.danger-link { color: #a44939 !important; }
+.danger-link:hover { color: #7f2e24 !important; }
+.band-editor { display: grid; gap: 8px; margin-top: 16px; }
+.band-row { display: grid; grid-template-columns: .55fr .7fr .7fr 1.5fr auto; gap: 8px; align-items: center; }
+.band-row input { min-width: 0; }
+.form-grid select, .grade-form select, .dialog-form select { width: 100%; }
+@media (max-width: 760px) {
+  .action-cluster { width: 100%; justify-content: flex-start; }
+  .band-row { grid-template-columns: 1fr 1fr; }
+  .band-row .band-remark { grid-column: 1 / -1; }
+}

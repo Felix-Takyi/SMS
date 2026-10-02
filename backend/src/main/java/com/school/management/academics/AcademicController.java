@@ -9,9 +9,11 @@ import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
@@ -101,6 +103,13 @@ public class AcademicController {
         return subjectService.createSubject(request);
     }
 
+    @DeleteMapping("/subjects/{subjectId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('ACADEMICS_MANAGE')")
+    public void deleteSubject(@PathVariable UUID subjectId) {
+        subjectService.deleteSubject(subjectId);
+    }
+
     @GetMapping("/academic-classes/{classId}/streams")
     @PreAuthorize("hasAuthority('ACADEMICS_VIEW')")
     public Page<ClassStreamResponse> listClassStreams(@PathVariable UUID classId,
@@ -176,11 +185,43 @@ public class AcademicController {
         return assessmentService.createAssessment(request);
     }
 
+    @GetMapping("/assessments/{assessmentId}/scores")
+    @PreAuthorize("hasAuthority('ASSESSMENT_VIEW')")
+    public Page<AssessmentScoreResponse> listAssessmentScores(@PathVariable UUID assessmentId,
+                                                              @RequestParam(defaultValue = "0") int page,
+                                                              @RequestParam(defaultValue = "100") int size) {
+        if (page < 0 || size < 1 || size > 500) {
+            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 500.");
+        }
+        return assessmentService.listScores(assessmentId, PageRequest.of(page, size, Sort.by("createdAt").ascending()));
+    }
+
     @PostMapping("/assessment-scores")
     @ResponseStatus(HttpStatus.CREATED)
     @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
-    public AssessmentScore recordAssessmentScore(@Valid @RequestBody CreateAssessmentScoreRequest request) {
+    public AssessmentScoreResponse recordAssessmentScore(@Valid @RequestBody CreateAssessmentScoreRequest request) {
         return assessmentService.recordScore(request);
+    }
+
+    @PutMapping("/assessment-scores/{scoreId}")
+    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
+    public AssessmentScoreResponse updateAssessmentScore(@PathVariable UUID scoreId,
+                                                         @Valid @RequestBody UpdateAssessmentScoreRequest request) {
+        return assessmentService.updateScore(scoreId, request);
+    }
+
+    @DeleteMapping("/assessment-scores/{scoreId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
+    public void deleteAssessmentScore(@PathVariable UUID scoreId) {
+        assessmentService.deleteScore(scoreId);
+    }
+
+    @DeleteMapping("/assessments/{assessmentId}")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('ASSESSMENT_WRITE')")
+    public void deleteAssessment(@PathVariable UUID assessmentId) {
+        assessmentService.deleteAssessment(assessmentId);
     }
 
     @GetMapping("/grading-scales")

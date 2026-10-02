@@ -72,6 +72,12 @@ public class AssessmentScore {
         return score;
     }
 
+
+    public void updateScore(BigDecimal score) {
+        this.score = score == null ? BigDecimal.ZERO : score;
+        this.updatedAt = Instant.now();
+    }
+
     public Instant getCreatedAt() {
         return createdAt;
     }

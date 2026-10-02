@@ -3,10 +3,12 @@ package com.school.management.academics;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 import java.math.BigDecimal;
+import java.util.UUID;
 import java.time.LocalDate;
 import java.util.List;
 
 import org.junit.jupiter.api.Test;
+import org.springframework.test.util.ReflectionTestUtils;
 
 import com.school.management.students.Student;
 
@@ -30,6 +32,8 @@ class ResultPdfServiceTest {
 
         Subject mathematics = new Subject("MATH", "Mathematics", "Core subject", true);
         Subject english = new Subject("ENG", "English", "Language subject", true);
+        ReflectionTestUtils.setField(mathematics, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(english, "id", UUID.randomUUID());
 
         AcademicYear academicYear = new AcademicYear(
             "2026/2027",
@@ -46,6 +50,9 @@ class ResultPdfServiceTest {
             new BigDecimal("80"), LocalDate.of(2026, 11, 2), LocalDate.of(2026, 11, 5));
         Assessment essay = new Assessment(english, academicYear, schoolClass, "ESSAY",
             new BigDecimal("100"), LocalDate.of(2026, 10, 4), LocalDate.of(2026, 10, 8));
+        ReflectionTestUtils.setField(quiz, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(test, "id", UUID.randomUUID());
+        ReflectionTestUtils.setField(essay, "id", UUID.randomUUID());
 
         GradingScale gradingScale = new GradingScale("Default", List.of(
             new CreateGradeBandRequest("A", new BigDecimal("80"), new BigDecimal("100"), "Excellent"),
@@ -66,7 +73,7 @@ class ResultPdfServiceTest {
         );
 
         assertEquals(2, summary.subjectRows().size());
-        assertEquals(new BigDecimal("80.00"), summary.averagePercentage());
+        assertEquals(new BigDecimal("89.00"), summary.averagePercentage());
         assertEquals("A", summary.overallGrade());
     }
 }

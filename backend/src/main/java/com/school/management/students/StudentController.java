@@ -32,8 +32,8 @@ public class StudentController {
     @PreAuthorize("hasAuthority('STUDENT_VIEW')")
     public Page<StudentResponse> listStudents(@RequestParam(defaultValue = "0") int page,
                                              @RequestParam(defaultValue = "20") int size) {
-        if (page < 0 || size < 1 || size > 100) {
-            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 100.");
+        if (page < 0 || size < 1 || size > 500) {
+            throw new IllegalArgumentException("Page must be non-negative and size must be between 1 and 500.");
         }
         return studentService.listStudents(PageRequest.of(page, size, Sort.by("admissionNumber").ascending()));
     }
