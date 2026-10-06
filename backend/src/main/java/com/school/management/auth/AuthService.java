@@ -15,6 +15,7 @@ import org.springframework.stereotype.Service;
 
 import com.school.management.audit.LoginAttemptRecorder;
 import com.school.management.users.AppUser;
+import com.school.management.users.AppUserRepository;
 
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
@@ -26,15 +27,18 @@ public class AuthService {
 
     private final AuthenticationManager authenticationManager;
     private final LoginAttemptRecorder loginAttemptRecorder;
+    private final AppUserRepository users;
     private final SecurityContextRepository securityContextRepository;
     private final PasswordEncoder passwordEncoder;
 
     public AuthService(AuthenticationManager authenticationManager,
                        LoginAttemptRecorder loginAttemptRecorder,
+                       AppUserRepository users,
                        SecurityContextRepository securityContextRepository,
                        PasswordEncoder passwordEncoder) {
         this.authenticationManager = authenticationManager;
         this.loginAttemptRecorder = loginAttemptRecorder;
+        this.users = users;
         this.securityContextRepository = securityContextRepository;
         this.passwordEncoder = passwordEncoder;
     }
@@ -62,6 +66,23 @@ public class AuthService {
         HttpSession session = servletRequest.getSession(true);
         session.setAttribute(LOGIN_LOG_SESSION_KEY, loginLog.toString());
 
+        return authResponse(user);
+    }
+
+    public AuthResponse refreshCurrentUser(AppUser principal, HttpServletRequest servletRequest,
+                                           HttpServletResponse servletResponse) {
+        AppUser user = users.findByUsernameIgnoreCase(principal.getUsername())
+            .orElseThrow(() -> new BadCredentialsException("Invalid username or password."));
+        Authentication authentication = org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+            .authenticated(user, null, user.getAuthorities());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
+        securityContextRepository.saveContext(context, servletRequest, servletResponse);
+        return authResponse(user);
+    }
+
+    private AuthResponse authResponse(AppUser user) {
         var permissions = user.getAuthorities().stream()
             .map(authority -> authority.getAuthority())
             .sorted()

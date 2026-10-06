@@ -497,5 +497,16 @@ try {
     document.querySelectorAll("[data-permission]").forEach((link) => { if (!can(link.dataset.permission)) link.remove(); });
     document.querySelector("#user-name").textContent = user.displayName; document.querySelector("#user-role").textContent = user.roles.join(" / ") || "School staff"; document.querySelector("#user-avatar").textContent = user.displayName.split(/\s+/).filter(Boolean).slice(0,2).map(p=>p[0]).join("").toUpperCase() || "--"; document.querySelector("#topbar-user").textContent=user.displayName; document.querySelector("#today-label").textContent=new Intl.DateTimeFormat(undefined,{day:"numeric",month:"short",year:"numeric"}).format(new Date());
     document.querySelector("#sign-out").addEventListener("click",async()=>{try{await signOut();}catch{}window.location.replace("/login.html");}); document.querySelector("#menu-toggle").addEventListener("click",(event)=>{const open=document.querySelector("#sidebar").classList.toggle("sidebar-open");event.currentTarget.setAttribute("aria-expanded",String(open));}); window.addEventListener("hashchange",render); await render();
+    const initialAccess = `${user.roles.slice().sort().join(",")}|${user.permissions.slice().sort().join(",")}`;
+    const refreshAccess = async () => {
+      try {
+        const latestUser = await currentUser();
+        if (!latestUser) { window.location.replace("/login.html"); return; }
+        const latestAccess = `${latestUser.roles.slice().sort().join(",")}|${latestUser.permissions.slice().sort().join(",")}`;
+        if (latestAccess !== initialAccess) window.location.reload();
+      } catch {}
+    };
+    window.addEventListener("focus", refreshAccess);
+    window.setInterval(refreshAccess, 30000);
   }
 } catch (error) { root.innerHTML = errorBlock(error); }
