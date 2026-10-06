@@ -1,22 +1,23 @@
 package com.school.management.users;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.FetchType;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.JoinTable;
-import jakarta.persistence.ManyToMany;
-import jakarta.persistence.Table;
-import org.hibernate.annotations.UuidGenerator;
-import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.userdetails.UserDetails;
-
-import jakarta.persistence.Id;
 import java.time.Instant;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
+
+import org.hibernate.annotations.UuidGenerator;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.JoinTable;
+import jakarta.persistence.ManyToMany;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "users")
@@ -39,6 +40,9 @@ public class AppUser implements UserDetails {
 
     @Column(nullable = false)
     private boolean enabled = true;
+
+    @Column(name = "password_change_required", nullable = false)
+    private boolean passwordChangeRequired;
 
     @Column(name = "failed_login_attempts", nullable = false)
     private int failedLoginAttempts;
@@ -122,7 +126,23 @@ public class AppUser implements UserDetails {
 
     public void changePasswordHash(String newPasswordHash) {
         this.passwordHash = newPasswordHash;
+        this.passwordChangeRequired = false;
         this.updatedAt = Instant.now();
+    }
+
+    public void requirePasswordChange() {
+        this.passwordChangeRequired = true;
+        this.updatedAt = Instant.now();
+    }
+
+    public void setTemporaryPasswordHash(String newPasswordHash) {
+        this.passwordHash = newPasswordHash;
+        this.passwordChangeRequired = true;
+        this.updatedAt = Instant.now();
+    }
+
+    public boolean isPasswordChangeRequired() {
+        return passwordChangeRequired;
     }
 
     public int getFailedLoginAttempts() {

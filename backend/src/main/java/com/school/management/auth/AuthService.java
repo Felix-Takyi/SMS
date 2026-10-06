@@ -91,7 +91,8 @@ public class AuthService {
             .map(role -> role.getCode())
             .sorted(Comparator.naturalOrder())
             .toList();
-        return new AuthResponse(user.getId(), user.getUsername(), user.getDisplayName(), roles, permissions);
+        return new AuthResponse(user.getId(), user.getUsername(), user.getDisplayName(), roles, permissions,
+            user.isPasswordChangeRequired());
     }
 
     public void changePassword(AppUser user, ChangePasswordRequest request) {
@@ -103,6 +104,11 @@ public class AuthService {
             throw new IllegalArgumentException("New password must be at least 8 characters and no more than 72 UTF-8 bytes.");
         }
         loginAttemptRecorder.recordPasswordChange(user, passwordEncoder.encode(request.newPassword()));
+        Authentication authentication = org.springframework.security.authentication.UsernamePasswordAuthenticationToken
+            .authenticated(user, null, user.getAuthorities());
+        SecurityContext context = SecurityContextHolder.createEmptyContext();
+        context.setAuthentication(authentication);
+        SecurityContextHolder.setContext(context);
     }
 
     public void logout(AppUser user, HttpServletRequest request) {

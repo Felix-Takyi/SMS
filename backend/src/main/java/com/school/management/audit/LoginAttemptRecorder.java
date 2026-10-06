@@ -1,13 +1,14 @@
 package com.school.management.audit;
 
-import com.school.management.users.AppUser;
-import com.school.management.users.AppUserRepository;
-import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Transactional;
-
 import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
+
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+
+import com.school.management.users.AppUser;
+import com.school.management.users.AppUserRepository;
 
 @Service
 public class LoginAttemptRecorder {
@@ -75,5 +76,13 @@ public class LoginAttemptRecorder {
         users.save(user);
         auditLogs.save(new AuditLog(user.getId(), "PASSWORD_CHANGED", "AUTH", user.getId().toString(),
             Instant.now(), null, null));
+    }
+
+    @Transactional
+    public void recordPasswordReset(AppUser actor, AppUser target, String encodedPassword) {
+        target.setTemporaryPasswordHash(encodedPassword);
+        users.save(target);
+        auditLogs.save(new AuditLog(actor.getId(), "PASSWORD_RESET", "AUTH", target.getId().toString(),
+            Instant.now(), null, "Temporary password issued; change required at next sign-in."));
     }
 }

@@ -1,10 +1,12 @@
 package com.school.management.users;
 
-import jakarta.validation.Valid;
+import java.util.UUID;
+
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.access.prepost.PreAuthorize;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -15,7 +17,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseStatus;
 import org.springframework.web.bind.annotation.RestController;
 
-import java.util.UUID;
+import jakarta.validation.Valid;
 
 @RestController
 @RequestMapping("/api/v1")
@@ -51,6 +53,15 @@ public class UserController {
     public UserResponse replaceRoles(@PathVariable UUID id,
                                      @Valid @RequestBody ReplaceRolesRequest request) {
         return userService.replaceUserRoles(id, request);
+    }
+
+    @PutMapping("/users/{id}/password")
+    @ResponseStatus(HttpStatus.NO_CONTENT)
+    @PreAuthorize("hasAuthority('USER_MANAGE')")
+    public void resetPassword(@PathVariable UUID id,
+                              @AuthenticationPrincipal com.school.management.users.AppUser actor,
+                              @Valid @RequestBody ResetUserPasswordRequest request) {
+        userService.resetPassword(id, actor.getId(), request.temporaryPassword());
     }
 
     @PostMapping("/users/{id}/activate")
