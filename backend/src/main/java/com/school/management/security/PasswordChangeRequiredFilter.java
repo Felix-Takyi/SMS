@@ -33,6 +33,10 @@ public class PasswordChangeRequiredFilter extends OncePerRequestFilter {
     @Override
     protected void doFilterInternal(HttpServletRequest request, HttpServletResponse response,
                                     FilterChain filterChain) throws ServletException, IOException {
+        if (!request.getServletPath().startsWith("/api/v1/")) {
+            filterChain.doFilter(request, response);
+            return;
+        }
         Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
         if (authentication != null && authentication.isAuthenticated()
             && authentication.getPrincipal() instanceof AppUser principal) {
