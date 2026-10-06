@@ -1,17 +1,17 @@
 package com.school.management.users;
 
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
-import java.util.List;
-import java.util.Set;
-import java.util.UUID;
 
 @Service
 public class UserService {
@@ -74,8 +74,8 @@ public class UserService {
 
     private void validatePassword(String password) {
         int bytes = password.getBytes(StandardCharsets.UTF_8).length;
-        if (password.length() < 12 || bytes > 72) {
-            throw new IllegalArgumentException("Password must be at least 12 characters and no more than 72 UTF-8 bytes.");
+        if (password.length() < 8 || bytes > 72) {
+            throw new IllegalArgumentException("Password must be at least 8 characters and no more than 72 UTF-8 bytes.");
         }
     }
 

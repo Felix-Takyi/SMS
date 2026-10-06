@@ -1,10 +1,8 @@
 package com.school.management.auth;
 
-import com.school.management.audit.LoginAttemptRecorder;
-import com.school.management.users.AppUser;
-import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
-import jakarta.servlet.http.HttpSession;
+import java.nio.charset.StandardCharsets;
+import java.util.Comparator;
+
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.Authentication;
@@ -14,8 +12,13 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.context.SecurityContextRepository;
 import org.springframework.stereotype.Service;
-import java.nio.charset.StandardCharsets;
-import java.util.Comparator;
+
+import com.school.management.audit.LoginAttemptRecorder;
+import com.school.management.users.AppUser;
+
+import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpServletResponse;
+import jakarta.servlet.http.HttpSession;
 
 @Service
 public class AuthService {
@@ -74,9 +77,9 @@ public class AuthService {
         if (!passwordEncoder.matches(request.currentPassword(), user.getPassword())) {
             throw new BadCredentialsException("Current password is incorrect.");
         }
-        if (request.newPassword().length() < 12
+        if (request.newPassword().length() < 8
             || request.newPassword().getBytes(StandardCharsets.UTF_8).length > 72) {
-            throw new IllegalArgumentException("New password must be at least 12 characters and no more than 72 UTF-8 bytes.");
+            throw new IllegalArgumentException("New password must be at least 8 characters and no more than 72 UTF-8 bytes.");
         }
         loginAttemptRecorder.recordPasswordChange(user, passwordEncoder.encode(request.newPassword()));
     }

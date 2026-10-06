@@ -35,7 +35,7 @@ class UserServiceTest {
         IllegalArgumentException exception = assertThrows(IllegalArgumentException.class,
             () -> userService.createUser(request));
 
-        assertTrue(exception.getMessage().contains("at least 12"));
+        assertTrue(exception.getMessage().contains("at least 8"));
     }
 
     @Test
@@ -50,7 +50,7 @@ class UserServiceTest {
             "alice",
             "Alice Example",
             "alice@example.com",
-            "StrongPassword!123",
+            "Passw0rd",
             Set.of("SUPER_ADMIN")
         );
 
@@ -63,7 +63,7 @@ class UserServiceTest {
         assertEquals("alice", response.username());
         assertEquals("Alice Example", response.displayName());
         assertEquals(List.of("SUPER_ADMIN"), response.roles());
-        assertTrue(passwordEncoder.matches("StrongPassword!123", savedUser.getPassword()));
+        assertTrue(passwordEncoder.matches("Passw0rd", savedUser.getPassword()));
         assertEquals(Set.of("SUPER_ADMIN"), savedUser.getRoles().stream().map(Role::getCode).collect(java.util.stream.Collectors.toSet()));
     }
 

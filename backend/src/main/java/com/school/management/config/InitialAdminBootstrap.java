@@ -1,10 +1,8 @@
 package com.school.management.config;
 
-import com.school.management.audit.AuditLog;
-import com.school.management.audit.AuditLogRepository;
-import com.school.management.users.AppUser;
-import com.school.management.users.AppUserRepository;
-import com.school.management.users.RoleRepository;
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
@@ -12,8 +10,11 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.nio.charset.StandardCharsets;
-import java.time.Instant;
+import com.school.management.audit.AuditLog;
+import com.school.management.audit.AuditLogRepository;
+import com.school.management.users.AppUser;
+import com.school.management.users.AppUserRepository;
+import com.school.management.users.RoleRepository;
 
 @Component
 public class InitialAdminBootstrap implements ApplicationRunner {
@@ -46,9 +47,9 @@ public class InitialAdminBootstrap implements ApplicationRunner {
             throw new IllegalStateException(
                 "No users exist. Set BOOTSTRAP_ADMIN_USERNAME and BOOTSTRAP_ADMIN_PASSWORD for first startup.");
         }
-        if (password.length() < 12 || password.getBytes(StandardCharsets.UTF_8).length > 72) {
+        if (password.length() < 8 || password.getBytes(StandardCharsets.UTF_8).length > 72) {
             throw new IllegalStateException(
-                "Bootstrap password must be at least 12 characters and no more than 72 UTF-8 bytes.");
+            "Bootstrap password must be at least 8 characters and no more than 72 UTF-8 bytes.");
         }
         var superAdminRole = roles.findByCode("SUPER_ADMIN")
             .orElseThrow(() -> new IllegalStateException("The SUPER_ADMIN role is missing from the database."));
