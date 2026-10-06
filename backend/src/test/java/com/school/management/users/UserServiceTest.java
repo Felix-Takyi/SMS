@@ -10,17 +10,21 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import com.school.management.audit.LoginAttemptRecorder;
+
 class UserServiceTest {
     private final AppUserRepository users = mock(AppUserRepository.class);
     private final RoleRepository roles = mock(RoleRepository.class);
+    private final LoginAttemptRecorder loginAttemptRecorder = mock(LoginAttemptRecorder.class);
     private final PasswordEncoder passwordEncoder = new BCryptPasswordEncoder();
-    private final UserService userService = new UserService(users, roles, passwordEncoder);
+    private final UserService userService = new UserService(users, roles, passwordEncoder, loginAttemptRecorder);
 
     @Test
     void createUserRejectsPasswordBelowRequiredLength() {
@@ -64,7 +68,24 @@ class UserServiceTest {
         assertEquals("Alice Example", response.displayName());
         assertEquals(List.of("SUPER_ADMIN"), response.roles());
         assertTrue(passwordEncoder.matches("Passw0rd", savedUser.getPassword()));
+        assertTrue(savedUser.isPasswordChangeRequired());
         assertEquals(Set.of("SUPER_ADMIN"), savedUser.getRoles().stream().map(Role::getCode).collect(java.util.stream.Collectors.toSet()));
+    }
+
+    @Test
+    void resetPasswordStoresOnlyAnEncodedTemporaryPassword() {
+        UUID targetId = UUID.randomUUID();
+        UUID actorId = UUID.randomUUID();
+        AppUser target = new AppUser("alice", "Alice Example", null, passwordEncoder.encode("oldpass1"));
+        AppUser actor = new AppUser("admin", "Admin Example", null, passwordEncoder.encode("adminpass1"));
+        when(users.findById(targetId)).thenReturn(java.util.Optional.of(target));
+        when(users.findById(actorId)).thenReturn(java.util.Optional.of(actor));
+
+        userService.resetPassword(targetId, actorId, "TempPass1");
+
+        org.mockito.ArgumentCaptor<String> encodedPassword = org.mockito.ArgumentCaptor.forClass(String.class);
+        verify(loginAttemptRecorder).recordPasswordReset(same(actor), same(target), encodedPassword.capture());
+        assertTrue(passwordEncoder.matches("TempPass1", encodedPassword.getValue()));
     }
 
     @Test
